@@ -4,10 +4,13 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from datetime import datetime, timedelta, timezone
+
 from app.database import Base, get_db
 from app.main import app
 from app.models.user import User
-from app.security import hash_password, verify_password
+from app.models.user_session import UserSession
+from app.security import hash_password, hash_session_token, verify_password
 
 
 @pytest.fixture()
@@ -17,7 +20,7 @@ def session_factory():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    Base.metadata.create_all(engine, tables=[User.__table__])
+    Base.metadata.create_all(engine, tables=[User.__table__, UserSession.__table__])
     factory = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     yield factory
     engine.dispose()
@@ -112,3 +115,107 @@ def test_field_wajib_hilang_ditolak(client):
     response = client.post("/auth/register", json={"email": "a@example.com"})
 
     assert response.status_code == 422
+
+
+def _register(client):
+    client.post("/auth/register", json=VALID_PAYLOAD)
+
+
+def _login(client, password="rahasia123"):
+    return client.post(
+        "/auth/login",
+        json={"email": "owner@example.com", "password": password},
+    )
+
+
+def test_login_berhasil_mengembalikan_token(client, session_factory):
+    _register(client)
+
+    response = client.post(
+        "/auth/login",
+        json={"email": "OWNER@example.com", "password": "rahasia123"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["token_type"] == "bearer"
+    assert body["access_token"]
+
+    with session_factory() as db:
+        stored = db.execute(select(UserSession)).scalar_one()
+        assert stored.token_hash == hash_session_token(body["access_token"])
+        assert body["access_token"] != stored.token_hash
+
+
+def test_login_password_salah_ditolak(client):
+    _register(client)
+
+    response = _login(client, password="salah12345")
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Email atau password salah"
+
+
+def test_login_email_tidak_terdaftar_ditolak(client):
+    response = client.post(
+        "/auth/login",
+        json={"email": "tidak@ada.com", "password": "rahasia123"},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Email atau password salah"
+
+
+def test_endpoint_terlindungi_menolak_tanpa_token(client):
+    response = client.post("/auth/logout")
+
+    assert response.status_code == 401
+
+
+def test_endpoint_terlindungi_menolak_token_palsu(client):
+    _register(client)
+
+    response = client.post(
+        "/auth/logout",
+        headers={"Authorization": "Bearer token-palsu"},
+    )
+
+    assert response.status_code == 401
+
+
+def test_logout_membuat_token_tidak_berlaku(client):
+    _register(client)
+    token = _login(client).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    first = client.post("/auth/logout", headers=headers)
+    second = client.post("/auth/logout", headers=headers)
+
+    assert first.status_code == 204
+    assert second.status_code == 401
+
+
+def test_token_kedaluwarsa_ditolak(client, session_factory):
+    _register(client)
+    token = _login(client).json()["access_token"]
+
+    with session_factory() as db:
+        stored = db.execute(select(UserSession)).scalar_one()
+        stored.expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+        db.commit()
+
+    response = client.post("/auth/logout", headers={"Authorization": f"Bearer {token}"})
+
+    assert response.status_code == 401
+
+
+def test_login_pengguna_nonaktif_ditolak(client, session_factory):
+    _register(client)
+    with session_factory() as db:
+        user = db.execute(select(User)).scalar_one()
+        user.is_active = False
+        db.commit()
+
+    response = _login(client)
+
+    assert response.status_code == 401

@@ -5,7 +5,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.config import settings
 from app.database import Base
-from app.models import category, membership, organization, product, stock_balance, stock_movement, unit, user, warehouse  # noqa: F401  (agar tabel terdaftar)
+from app.models import category, membership, organization, product, stock_balance, stock_movement, unit, user, user_session, warehouse  # noqa: F401  (agar tabel terdaftar)
 
 # Alembic Config object
 config = context.config

@@ -3,6 +3,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     database_url: str
+    session_ttl_hours: int = 12
 
     model_config = SettingsConfigDict(
         env_file=".env",
