@@ -6,6 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.routers import auth
 
 load_dotenv()
 
@@ -18,6 +19,8 @@ app = FastAPI(
     version=API_VERSION,
     description="Backend API untuk aplikasi StokSaku ERP.",
 )
+
+app.include_router(auth.router)
 
 
 @app.get("/")
