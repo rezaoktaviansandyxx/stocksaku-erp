@@ -1,0 +1,37 @@
+<div class="auth-container">
+  <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-form">
+    <h2>Masuk ke StokSaku ERP</h2>
+
+    <p *ngIf="error()" class="error">{{ error() }}</p>
+
+    <label>
+      Email
+      <input
+        type="email"
+        formControlName="email"
+        placeholder="email@example.com"
+      />
+      <small *ngIf="f.email.invalid && f.email.touched">Isi email yang valid</small>
+    </label>
+
+    <label>
+      Password
+      <input
+        type="password"
+        formControlName="password"
+        placeholder="Minimal 8 karakter"
+      />
+      <small *ngIf="f.password.invalid && f.password.touched">
+        Password minimal 8 karakter
+      </small>
+    </label>
+
+    <button type="submit" [disabled]="loginForm.invalid || loading()">
+      {{ loading() ? 'Memproses...' : 'Masuk' }}
+    </button>
+
+    <p class="switch-link">
+      Belum punya akun? <a routerLink="/register">Daftar</a>
+    </p>
+  </form>
+</div>
