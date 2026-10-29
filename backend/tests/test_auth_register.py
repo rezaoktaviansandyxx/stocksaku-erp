@@ -8,6 +8,8 @@ from datetime import datetime, timedelta, timezone
 
 from app.database import Base, get_db
 from app.main import app
+from app.models.membership import Membership
+from app.models.organization import Organization
 from app.models.user import User
 from app.models.user_session import UserSession
 from app.security import hash_password, hash_session_token, verify_password
@@ -20,7 +22,10 @@ def session_factory():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    Base.metadata.create_all(engine, tables=[User.__table__, UserSession.__table__])
+    Base.metadata.create_all(
+        engine,
+        tables=[User.__table__, UserSession.__table__, Organization.__table__, Membership.__table__],
+    )
     factory = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     yield factory
     engine.dispose()
@@ -219,3 +224,101 @@ def test_login_pengguna_nonaktif_ditolak(client, session_factory):
     response = _login(client)
 
     assert response.status_code == 401
+
+
+def _login_and_get_token(client):
+    _register(client)
+    return client.post(
+        "/auth/login",
+        json={"email": "owner@example.com", "password": "rahasia123"},
+    ).json()["access_token"]
+
+
+def _org_headers(token):
+    return {"Authorization": f"Bearer {token}"}
+
+
+def test_create_organization_diberikan_ke_owner(client, session_factory):
+    token = _login_and_get_token(client)
+
+    response = client.post(
+        "/organizations",
+        json={"name": "Toko ABC", "slug": "toko-abc"},
+        headers=_org_headers(token),
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["name"] == "Toko ABC"
+    assert body["slug"] == "toko-abc"
+    assert body["status"] == "active"
+
+    with session_factory() as db:
+        org = db.execute(select(Organization).where(Organization.slug == "toko-abc")).scalar_one()
+        membership = db.execute(
+            select(Membership).where(Membership.organization_id == org.id)
+        ).scalar_one()
+        assert membership.user.email == "owner@example.com"
+        assert membership.role == "owner"
+
+
+def test_user_tidak_login_tidak_bisa_buat_organisasi(client):
+    response = client.post("/organizations", json={"name": "Toko ABC", "slug": "toko-abc"})
+
+    assert response.status_code == 401
+
+
+def test_slug_duplikat_ditolak(client, session_factory):
+    token = _login_and_get_token(client)
+    create_payload = {"name": "Toko ABC", "slug": "toko-abc"}
+
+    first = client.post("/organizations", json=create_payload, headers=_org_headers(token))
+    second = client.post(
+        "/organizations",
+        json={"name": "Toko Lain", "slug": "toko-abc"},
+        headers=_org_headers(token),
+    )
+
+    assert first.status_code == 201
+    assert second.status_code == 409
+    assert second.json()["detail"] == "Slug sudah digunakan"
+
+
+def test_slug_invalid_ditolak(client, session_factory):
+    token = _login_and_get_token(client)
+
+    for bad in ["a", "toko abc!", "-toko", "toko-", "toko@abc"]:
+        response = client.post(
+            "/organizations",
+            json={"name": "Toko ABC", "slug": bad},
+            headers=_org_headers(token),
+        )
+        assert response.status_code == 422
+
+
+def test_list_my_organizations_hanya_mengembalikan_organisasi_user(client, session_factory):
+    token = _login_and_get_token(client)
+    another_payload = {"email": "other@example.com", "password": "rahasia123", "full_name": "Budak"}
+    client.post("/auth/register", json=another_payload)
+    other_token = client.post(
+        "/auth/login",
+        json={"email": "other@example.com", "password": "rahasia123"},
+    ).json()["access_token"]
+
+    client.post(
+        "/organizations",
+        json={"name": "Toko ABC", "slug": "toko-abc"},
+        headers=_org_headers(token),
+    )
+    client.post(
+        "/organizations",
+        json={"name": "Toko XYZ", "slug": "toko-xyz"},
+        headers=_org_headers(other_token),
+    )
+
+    response = client.get("/organizations/mine", headers=_org_headers(token))
+
+    assert response.status_code == 200
+    slugs = [item["slug"] for item in response.json()]
+    assert slugs == ["toko-abc"]
+
