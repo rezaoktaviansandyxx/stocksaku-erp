@@ -345,6 +345,7 @@ Kriteria selesai:
 
 - Prioritas: P0
 - Estimasi: 2 sesi
+- Status: **SELESAI** ✅
 
 Task:
 - Membuat layout dashboard.
@@ -362,6 +363,7 @@ Kriteria selesai:
 
 - Prioritas: P0
 - Estimasi: 2–3 sesi
+- Status: **SELESAI** ✅
 
 Task:
 - Membuat form login.
@@ -380,6 +382,7 @@ Kriteria selesai:
 
 - Prioritas: P0
 - Estimasi: 2 sesi
+- Status: **SELESAI** ✅
 
 Task:
 - Membuat service untuk HTTP request.
@@ -397,6 +400,7 @@ Kriteria selesai:
 
 - Prioritas: P0
 - Estimasi: 3 sesi
+- Status: **SELESAI** ✅
 
 Task:
 - Membuat tabel produk.
@@ -414,6 +418,7 @@ Kriteria selesai:
 
 - Prioritas: P0
 - Estimasi: 3–4 sesi
+- Status: **SELESAI** ✅
 
 Task:
 - Membuat ringkasan saldo stok.
@@ -432,6 +437,7 @@ Kriteria selesai:
 
 - Prioritas: P0
 - Estimasi: 2 sesi
+- Status: **SELESAI** ✅
 
 Task:
 - Menampilkan jumlah produk.
