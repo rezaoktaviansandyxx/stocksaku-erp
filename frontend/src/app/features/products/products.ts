@@ -1,4 +1,5 @@
 import { Component, signal, OnInit,inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { InventoryService } from '../../core/services/inventory.service';
@@ -17,7 +18,7 @@ interface ProductForm {
 @Component({
   selector: 'app-products',
   standalone: true,
-  imports: [FormsModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <div class="products-page">
       <div class="header">

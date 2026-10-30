@@ -1,11 +1,13 @@
 import { Component, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import type { OrganizationResponse } from '../../core/models/auth.model';
 
 @Component({
   selector: 'app-org-list',
   standalone: true,
+  imports: [CommonModule, RouterLink],
   template: `
     <div class="org-page">
       <h2>Pilih Organisasi</h2>
