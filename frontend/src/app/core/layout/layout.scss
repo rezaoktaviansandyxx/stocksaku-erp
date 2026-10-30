@@ -56,6 +56,8 @@
   cursor: pointer;
 }
 
+/* Hidden - close button removed from sidebar */
+
 .nav-menu {
   list-style: none;
   padding: 1rem 0;
@@ -215,10 +217,6 @@
 
   .sidebar.open {
     transform: translateX(0);
-  }
-
-  .close-btn {
-    display: block;
   }
 
   .main-content {
