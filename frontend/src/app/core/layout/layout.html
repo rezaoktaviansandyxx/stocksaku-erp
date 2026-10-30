@@ -1,0 +1,72 @@
+<div class="layout">
+  <!-- Sidebar -->
+  <nav class="sidebar" [class.open]="mobileMenuOpen()">
+    <div class="sidebar-header">
+      <h1 class="logo">StokSaku ERP</h1>
+      <button class="close-btn" (click)="closeMobileMenu()">✕</button>
+    </div>
+
+    <ul class="nav-menu">
+      @for (item of navItems; track item.path) {
+        <li>
+          <a
+            routerLink="{{ item.path }}"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            (click)="closeMobileMenu()"
+          >
+            <span class="icon">{{ item.icon }}</span>
+            <span class="label">{{ item.label }}</span>
+          </a>
+        </li>
+      }
+    </ul>
+
+    <div class="sidebar-footer">
+      @if (auth.getActiveOrg()) {
+        <div class="org-info">
+          <span class="org-label">Organisasi:</span>
+          <span class="org-slug">{{ auth.getActiveOrg() }}</span>
+        </div>
+      }
+      <button class="logout-btn" (click)="logout()">
+        <span class="icon">🚪</span>
+        <span class="label">Keluar</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Header -->
+    <header class="header">
+      <button class="menu-btn" (click)="toggleMobileMenu()">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+      <h2 class="page-title">{{ pageTitle() }}</h2>
+
+      <div class="header-actions">
+        @if (auth.getActiveOrg()) {
+          <span class="org-slug-header">{{ auth.getActiveOrg() }}</span>
+        }
+        <button class="logout-btn-header" (click)="logout()">
+          🚪 Keluar
+        </button>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <main class="content" (click)="closeMobileMenu()">
+      <router-outlet />
+    </main>
+  </div>
+
+  <!-- Mobile overlay -->
+  <div
+    class="overlay"
+    [class.show]="mobileMenuOpen()"
+    (click)="closeMobileMenu()"
+  ></div>
+</div>
