@@ -2,6 +2,7 @@ import os
 
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -18,6 +19,16 @@ app = FastAPI(
     title=APP_NAME,
     version=API_VERSION,
     description="Backend API untuk aplikasi StokSaku ERP.",
+)
+
+# CORS: izinkan frontend berkomunikasi dengan backend.
+# Di production, ganti origins=["*"] dengan daftar origin yang dipercaya.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # TODO(production): ganti dengan origin frontend spesifik
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(auth.router)
