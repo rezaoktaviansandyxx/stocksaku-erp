@@ -2,7 +2,10 @@
   <!-- Sidebar -->
   <nav class="sidebar" [class.open]="mobileMenuOpen()">
     <div class="sidebar-header">
-      <h1 class="logo">StokSaku ERP</h1>
+      <div class="logo-container">
+        <img src="logo.png" alt="Logo StokSaku ERP" class="logo-img" />
+        <h1 class="logo-text">StokSaku ERP</h1>
+      </div>
       <button class="close-btn" (click)="closeMobileMenu()">✕</button>
     </div>
 
@@ -36,6 +39,13 @@
     </div>
   </nav>
 
+  <!-- Mobile overlay -->
+  <div
+    class="overlay"
+    [class.show]="mobileMenuOpen()"
+    (click)="closeMobileMenu()"
+  ></div>
+
   <!-- Main Content -->
   <div class="main-content">
     <!-- Header -->
@@ -62,11 +72,4 @@
       <router-outlet />
     </main>
   </div>
-
-  <!-- Mobile overlay -->
-  <div
-    class="overlay"
-    [class.show]="mobileMenuOpen()"
-    (click)="closeMobileMenu()"
-  ></div>
 </div>
