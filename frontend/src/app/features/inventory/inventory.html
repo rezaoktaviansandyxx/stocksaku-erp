@@ -6,13 +6,13 @@
       <p class="page-subtitle">Pantau posisi stok barang gudang, riwayat mutasi, dan pencatatan transaksi barang</p>
     </div>
     <div class="header-action-group">
-      <button class="btn-secondary" (click)="downloadBalancesCsv()" title="Unduh laporan saldo dan nilai persediaan">
+      <button class="btn btn-secondary" (click)="downloadBalancesCsv()" title="Unduh laporan saldo dan nilai persediaan">
         📦 Export Saldo
       </button>
-      <button class="btn-secondary" (click)="downloadMovementsCsv()" title="Unduh riwayat mutasi sesuai filter aktif">
+      <button class="btn btn-secondary" (click)="downloadMovementsCsv()" title="Unduh riwayat mutasi sesuai filter aktif">
         📑 Export Mutasi
       </button>
-      <button class="btn-primary" (click)="openTransactionModal('inbound')">
+      <button class="btn btn-primary" (click)="openTransactionModal('inbound')">
         <span class="btn-icon">＋</span> Transaksi Masuk / Keluar
       </button>
     </div>

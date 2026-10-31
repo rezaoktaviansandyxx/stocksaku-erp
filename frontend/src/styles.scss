@@ -1,6 +1,8 @@
 /* You can add global styles to this file, and also import other style files */
 
-/* Global Breakpoint & Theme Variables */
+/* ==========================================================================
+   Design System & CSS Variables
+   ========================================================================== */
 :root {
   /* Breakpoints */
   --breakpoint-mobile: 576px;
@@ -23,8 +25,8 @@
   /* Colors */
   --color-sidebar-bg: #1e293b;
   --color-sidebar-hover: #334155;
-  --color-sidebar-active: #0ea5e9;
-  --color-sidebar-active-bg: rgba(14, 165, 233, 0.12);
+  --color-sidebar-active: #0284c7;
+  --color-sidebar-active-bg: rgba(2, 132, 199, 0.12);
   --color-sidebar-text: #94a3b8;
   --color-sidebar-text-active: #ffffff;
   --color-sidebar-border: #334155;
@@ -32,10 +34,23 @@
   --color-body-bg: #f8fafc;
   --color-primary: #0284c7;
   --color-primary-hover: #0369a1;
+  --color-primary-active: #075985;
+  --color-primary-light: #e0f2fe;
+  
+  --color-secondary: #334155;
+  --color-secondary-hover: #1e293b;
+
   --color-danger: #ef4444;
   --color-danger-hover: #dc2626;
+  --color-danger-light: #fee2e2;
+
   --color-success: #10b981;
+  --color-success-hover: #059669;
+  --color-success-light: #d1fae5;
+
   --color-warning: #f59e0b;
+  --color-warning-hover: #d97706;
+  --color-warning-light: #fef3c7;
 
   --color-text: #0f172a;
   --color-text-muted: #64748b;
@@ -44,9 +59,23 @@
   --color-card-bg: #ffffff;
   --color-header-bg: #ffffff;
 
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  /* Shadows */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-modal: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+
+  /* Border radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 body {
@@ -58,10 +87,337 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Dark mode support variable detection */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-border: #334155;
-    --color-border-dark: #475569;
+/* ==========================================================================
+   Standardized Buttons & Controls
+   Reflecting identical design as the reference screenshot:
+   - Deep sky-blue (#0284c7)
+   - 8px border-radius
+   - 0.625rem 1.25rem padding (~10px 20px)
+   - 600 semi-bold font weight
+   ========================================================================== */
+
+/* Universal Button Base */
+button,
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.btn-outline {
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.625rem 1.25rem;
+  text-decoration: none;
+  transition: all 0.15s ease-in-out;
+  user-select: none;
+  white-space: nowrap;
+
+  &:disabled,
+  &[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
   }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.25);
+  }
+}
+
+/* Primary Action Button (Matches Screenshot: "+ Tambah Produk") */
+.btn-primary {
+  background-color: #0284c7 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+
+  &:hover:not(:disabled) {
+    background-color: #0369a1 !important;
+    border-color: #0369a1 !important;
+  }
+
+  &:active:not(:disabled) {
+    background-color: #075985 !important;
+  }
+}
+
+/* Secondary Button */
+.btn-secondary,
+.btn-outline {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+
+  &:hover:not(:disabled) {
+    background-color: #f1f5f9 !important;
+    border-color: #94a3b8 !important;
+    color: #0f172a !important;
+  }
+}
+
+/* Danger Button */
+.btn-danger {
+  background-color: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: #ffffff !important;
+
+  &:hover:not(:disabled) {
+    background-color: #dc2626 !important;
+    border-color: #dc2626 !important;
+  }
+}
+
+/* Table Row Action Buttons (Edit / Hapus) matching screenshot */
+.btn-small,
+.btn-sm {
+  padding: 0.35rem 0.75rem !important;
+  border-radius: 6px !important;
+  font-size: 0.8125rem !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  border: 1px solid #cbd5e1 !important;
+  background-color: #ffffff !important;
+  color: #334155 !important;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background-color: #f1f5f9 !important;
+    border-color: #94a3b8 !important;
+  }
+
+  &.btn-danger {
+    background-color: #ffffff !important;
+    color: #ef4444 !important;
+    border-color: #fecaca !important;
+
+    &:hover {
+      background-color: #fee2e2 !important;
+      border-color: #f87171 !important;
+      color: #b91c1c !important;
+    }
+  }
+}
+
+/* Action Cell in Tables */
+.action-cell {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Icon-only Actions for Tables */
+.btn-icon-action {
+  width: 32px;
+  height: 32px;
+  padding: 0 !important;
+  border-radius: 6px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0 !important;
+  background: #ffffff !important;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a;
+    border-color: #cbd5e1 !important;
+  }
+
+  &.edit:hover {
+    color: #0284c7;
+    background: #e0f2fe !important;
+    border-color: #bae6fd !important;
+  }
+
+  &.delete:hover,
+  &.danger:hover {
+    color: #ef4444;
+    background: #fee2e2 !important;
+    border-color: #fecaca !important;
+  }
+}
+
+/* Modal Close Button */
+.btn-close {
+  width: 32px;
+  height: 32px;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  background: #f1f5f9 !important;
+  border: none !important;
+  color: #64748b !important;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+  }
+}
+
+/* ==========================================================================
+   Standardized Badges, Inputs & Cards (Screenshot-accurate)
+   ========================================================================== */
+
+/* Badge dot and pill */
+.badge-status,
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  &.active,
+  &.badge-success,
+  &.status-confirmed,
+  &.status-received {
+    background-color: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+  }
+
+  &.inactive,
+  &.badge-danger,
+  &.status-cancelled {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+  }
+
+  &.badge-warning,
+  &.status-ordered,
+  &.status-draft {
+    background-color: #fffbeb;
+    color: #92400e;
+    border: 1px solid #fde68a;
+  }
+}
+
+/* Standard Header on pages */
+.page-header,
+.header,
+.header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  h1, h2, .section-title, .page-title-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 0.25rem 0;
+    letter-spacing: -0.02em;
+  }
+
+  p, .header-subtitle, .page-subtitle, .page-subtitle-text, .section-subtitle {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #64748b;
+  }
+}
+
+.header-action-group,
+.header-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Search input wrapper standard */
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+  max-width: 360px;
+
+  .search-icon {
+    position: absolute;
+    left: 0.875rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    pointer-events: none;
+    font-size: 0.875rem;
+  }
+
+  input {
+    width: 100%;
+    padding: 0.625rem 0.875rem 0.625rem 2.375rem;
+    font-size: 0.875rem;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    background-color: #f8fafc;
+    color: #0f172a;
+    outline: none;
+    box-sizing: border-box;
+    transition: all 0.15s ease;
+
+    &:focus {
+      background-color: #ffffff;
+      border-color: #0284c7;
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+
+    &::placeholder {
+      color: #94a3b8;
+    }
+  }
+}
+
+/* Alert Notification Banners */
+.alert-banner,
+.toast-success,
+.toast-error {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.alert-success,
+.toast-success {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.alert-danger,
+.toast-error,
+.error-banner {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
 }
