@@ -1,3 +1,4 @@
+from app.models.revoked_token import RevokedToken
 """backend/tests/test_roles.py"""
 import pytest
 from fastapi.testclient import TestClient
@@ -28,6 +29,7 @@ def session_factory():
         engine,
         tables=[
             User.__table__,
+            RevokedToken.__table__,
             Organization.__table__,
             Membership.__table__,
             Category.__table__,

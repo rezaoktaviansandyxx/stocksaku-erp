@@ -10,6 +10,7 @@ from app.database import Base, get_db
 from app.main import app
 from app.models.membership import Membership
 from app.models.organization import Organization
+from app.models.revoked_token import RevokedToken
 from app.models.user import User
 from app.security import hash_password, verify_password, create_access_token, decode_access_token
 
@@ -23,7 +24,7 @@ def session_factory():
     )
     Base.metadata.create_all(
         engine,
-        tables=[User.__table__, Organization.__table__, Membership.__table__],
+        tables=[User.__table__, Organization.__table__, Membership.__table__, RevokedToken.__table__],
     )
     factory = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     yield factory
@@ -318,4 +319,23 @@ def test_list_my_organizations_hanya_mengembalikan_organisasi_user(client, sessi
     assert response.status_code == 200
     slugs = [item["slug"] for item in response.json()]
     assert slugs == ["toko-abc"]
+
+
+def test_logout_invalidates_token(client):
+    client.post("/auth/register", json={"email": "revoke@example.com", "password": "rahasia123", "full_name": "R"})
+    res = client.post("/auth/login", json={"email": "revoke@example.com", "password": "rahasia123"})
+    token = res.json()["access_token"]
+    auth = {"Authorization": f"Bearer {token}"}
+
+    assert client.post("/auth/logout", headers=auth).status_code == 204
+    # Token yang sudah di-logout harus ditolak
+    assert client.get("/auth/me", headers=auth).status_code == 401
+
+
+def test_token_without_logout_still_works(client):
+    client.post("/auth/register", json={"email": "keep@example.com", "password": "rahasia123", "full_name": "K"})
+    res = client.post("/auth/login", json={"email": "keep@example.com", "password": "rahasia123"})
+    token = res.json()["access_token"]
+    assert client.get("/auth/me", headers={"Authorization": f"Bearer {token}"}).status_code == 200
+
 

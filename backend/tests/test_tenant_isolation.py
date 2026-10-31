@@ -1,3 +1,4 @@
+from app.models.revoked_token import RevokedToken
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, select
@@ -20,7 +21,8 @@ def session_factory():
     )
     Base.metadata.create_all(
         engine,
-        tables=[User.__table__, Organization.__table__, Membership.__table__],
+        tables=[User.__table__,
+            RevokedToken.__table__, Organization.__table__, Membership.__table__],
     )
     factory = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     yield factory

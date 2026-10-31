@@ -32,7 +32,7 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 
 def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> tuple[str, datetime]:
-    to_encode = data.copy()
+    to_encode = {**data, "jti": secrets.token_hex(16)}
     now = datetime.now(timezone.utc)
     if expires_delta:
         expire = now + expires_delta

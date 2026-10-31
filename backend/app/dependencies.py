@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException, status
@@ -9,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.membership import Membership
 from app.models.organization import Organization
+from app.models.revoked_token import RevokedToken
 from app.models.user import User
 from app.security import decode_access_token
 
@@ -47,6 +49,17 @@ def get_current_user(
         user_id = int(sub)
     except (ValueError, TypeError):
         raise UNAUTHORIZED
+
+    jti = payload.get("jti")
+    if jti is not None:
+        revoked = db.execute(
+            select(RevokedToken.jti).where(
+                RevokedToken.jti == jti,
+                RevokedToken.expires_at > datetime.now(timezone.utc),
+            )
+        ).first()
+        if revoked is not None:
+            raise UNAUTHORIZED
 
     user = db.get(User, user_id)
     if user is None or not user.is_active:

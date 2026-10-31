@@ -1,3 +1,4 @@
+from app.models.revoked_token import RevokedToken
 from decimal import Decimal
 import pytest
 from fastapi.testclient import TestClient
@@ -18,7 +19,6 @@ from app.models.stock_movement import StockMovement
 from app.models.supplier import Supplier
 from app.models.unit import Unit
 from app.models.user import User
-from app.models.user_session import UserSession
 from app.models.warehouse import Warehouse
 
 
@@ -33,7 +33,7 @@ def session_factory():
         engine,
         tables=[
             User.__table__,
-            UserSession.__table__,
+            RevokedToken.__table__,
             Organization.__table__,
             Membership.__table__,
             Supplier.__table__,

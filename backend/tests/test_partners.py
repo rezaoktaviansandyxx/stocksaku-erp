@@ -1,3 +1,4 @@
+from app.models.revoked_token import RevokedToken
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -11,7 +12,6 @@ from app.models.membership import Membership
 from app.models.organization import Organization
 from app.models.supplier import Supplier
 from app.models.user import User
-from app.models.user_session import UserSession
 
 @pytest.fixture()
 def session_factory():
@@ -24,7 +24,7 @@ def session_factory():
         engine,
         tables=[
             User.__table__,
-            UserSession.__table__,
+            RevokedToken.__table__,
             Organization.__table__,
             Membership.__table__,
             Supplier.__table__,

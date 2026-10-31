@@ -1,3 +1,4 @@
+from app.models.revoked_token import RevokedToken
 """
 Test suite for Epic D: Inventory Backend (D-01 through D-06)
 
@@ -46,6 +47,7 @@ def session_factory():
         engine,
         tables=[
             User.__table__,
+            RevokedToken.__table__,
             Organization.__table__,
             Membership.__table__,
             Category.__table__,
