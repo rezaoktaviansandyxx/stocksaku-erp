@@ -88,6 +88,25 @@ python -m pytest
 
 Suite pengujian menggunakan SQLite in-memory dan mencakup: registrasi/login, CRUD produk, inventaris, CRUD partner, siklus hidup Purchase Order (termasuk penerimaan stok dan proteksi ganda), siklus hidup Sales Order (validasi stok, konfirmasi, pembatalan), dashboard & ekspor CSV, serta proteksi multi-tenant.
 
+## Backup & Pemulihan Database
+
+Perlu `pg_dump` / `pg_restore` (bagian instalasi PostgreSQL) terpasang di PATH.
+
+### Backup database aktif
+```bash
+cd backend
+.venv\Scripts\python.exe scripts\backup_db.py
+# hasil: backups/stocksaku-backup-YYYYMMDD-HHMMSS.dump
+```
+
+### Pemulihan (uji rutin dengan target DB terpisah!)
+1. Buat database kosong sementara, mis. `stocksaku_restore_test`.
+2. Override DATABASE_URL ke database sementara:
+   - PowerShell: `$env:DATABASE_URL="postgresql://user:pass@localhost:5432/stocksaku_restore_test"`
+3. `python scripts/restore_db.py backups\stocksaku-backup-....dump`
+4. Verifikasi: `psql ... -c "\dt"` harus menampilkan tabel organizations, products, dst.; atau cek `/health/db` dengan DATABASE_URL sementara.
+5. Hapus database sementara setelah terbukti.
+
 ## Struktur Repository
 
 ```text
