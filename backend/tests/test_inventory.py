@@ -518,6 +518,29 @@ class TestInboundOutbound:
             balance = db.get(StockBalance, 1)
             assert float(balance.quantity) == 70.0
 
+    def test_outbound_exact_stock_to_zero_allowed(self, client, session_factory):
+        token, db_factory = _full_setup(client, session_factory)
+
+        with db_factory() as db:
+            warehouse_id, product_id = self._setup_with_initial_stock(db)
+
+        response = client.post(
+            "/inventory/outbound",
+            headers=_auth_headers(token),
+            json={
+                "warehouse_id": warehouse_id,
+                "product_id": product_id,
+                "quantity": "100",  # exact stock to reach 0
+                "notes": "keranjang habis",
+            },
+        )
+        assert response.status_code == 201
+        assert response.json()["movement_type"] == "outbound"
+
+        with db_factory() as db:
+            balance = db.get(StockBalance, 1)
+            assert float(balance.quantity) == 0.0
+
     def test_outbound_more_than_stock_rejected(self, client, session_factory):
         token, db_factory = _full_setup(client, session_factory)
 

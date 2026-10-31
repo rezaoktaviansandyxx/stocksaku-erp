@@ -379,11 +379,13 @@ def _get_or_create_balance(
     db: Session, org_id: int, warehouse_id: int, product_id: int
 ) -> StockBalance:
     balance = db.execute(
-        select(StockBalance).where(
+        select(StockBalance)
+        .where(
             StockBalance.organization_id == org_id,
             StockBalance.warehouse_id == warehouse_id,
             StockBalance.product_id == product_id,
         )
+        .with_for_update()
     ).scalar_one_or_none()
 
     if balance is None:
