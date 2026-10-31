@@ -229,7 +229,7 @@
     confirmText="Ya, Hapus"
     cancelText="Batal"
     [loading]="deleteLoading()"
-    (confirm)="executeDelete()"
-    (cancel)="showConfirmDelete.set(false)"
+    (confirmed)="executeDelete()"
+    (cancelled)="showConfirmDelete.set(false)"
   />
 </div>
