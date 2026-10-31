@@ -123,6 +123,66 @@ def list_units(
     return units
 
 
+@router.delete("/categories/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_category(
+    category_id: int,
+    db: Session = Depends(get_db),
+    membership: object = Depends(require_owner),
+):
+    category = db.get(Category, category_id)
+    if category is None or category.organization_id != membership.organization_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Kategori tidak ditemukan",
+        )
+
+    used = db.execute(
+        select(Product.id).where(
+            Product.organization_id == membership.organization_id,
+            Product.category_id == category_id,
+        ).limit(1)
+    ).first()
+    if used is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Kategori masih digunakan oleh produk",
+        )
+
+    db.delete(category)
+    db.commit()
+    return None
+
+
+@router.delete("/units/{unit_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_unit(
+    unit_id: int,
+    db: Session = Depends(get_db),
+    membership: object = Depends(require_owner),
+):
+    unit = db.get(Unit, unit_id)
+    if unit is None or unit.organization_id != membership.organization_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Satuan tidak ditemukan",
+        )
+
+    used = db.execute(
+        select(Product.id).where(
+            Product.organization_id == membership.organization_id,
+            Product.unit_id == unit_id,
+        ).limit(1)
+    ).first()
+    if used is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Satuan masih digunakan oleh produk",
+        )
+
+    db.delete(unit)
+    db.commit()
+    return None
+
+
 # =============================================================================
 # Warehouse endpoints
 # =============================================================================

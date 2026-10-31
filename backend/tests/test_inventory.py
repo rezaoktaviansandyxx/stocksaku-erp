@@ -398,6 +398,54 @@ class TestProductCRUD:
         detail = client.get(f"/products/{prod_id}", headers=headers).json()
         assert detail["is_active"] is False
 
+    def test_delete_category_with_reference_check(self, client, session_factory):
+        token, _ = _full_setup(client, session_factory)
+        headers = _auth_headers(token)
+        cat_id = client.post("/categories", json={"name": "Elektronik"}, headers=headers).json()["id"]
+
+        # hapus kategori yang belum dipakai
+        res = client.delete(f"/categories/{cat_id}", headers=headers)
+        assert res.status_code == 204
+        # hapus ulang -> 404
+        assert client.delete(f"/categories/{cat_id}", headers=headers).status_code == 404
+
+    def test_delete_category_in_use_rejected(self, client, session_factory):
+        token, _ = _full_setup(client, session_factory)
+        headers = _auth_headers(token)
+        cat_id = client.post("/categories", json={"name": "Elektronik"}, headers=headers).json()["id"]
+        unit_id = client.post("/units", json={"name": "Pcs", "symbol": "pcs"}, headers=headers).json()["id"]
+        client.post("/products", json={
+            "sku": "P9", "name": "Produk Kategori", "unit_id": unit_id,
+            "cost_price": 1000, "selling_price": 2000, "min_stock": 0,
+            "category_id": cat_id,
+        }, headers=headers)
+
+        res = client.delete(f"/categories/{cat_id}", headers=headers)
+        assert res.status_code == 400
+        assert client.get("/categories", headers=headers).json()[0]["id"] == cat_id
+
+    def test_delete_unit_with_reference_check(self, client, session_factory):
+        token, _ = _full_setup(client, session_factory)
+        headers = _auth_headers(token)
+        unit_id = client.post("/units", json={"name": "Pcs", "symbol": "pcs"}, headers=headers).json()["id"]
+
+        res = client.delete(f"/units/{unit_id}", headers=headers)
+        assert res.status_code == 204
+        assert client.delete(f"/units/{unit_id}", headers=headers).status_code == 404
+
+    def test_delete_unit_in_use_rejected(self, client, session_factory):
+        token, _ = _full_setup(client, session_factory)
+        headers = _auth_headers(token)
+        unit_id = client.post("/units", json={"name": "Pcs", "symbol": "pcs"}, headers=headers).json()["id"]
+        client.post("/products", json={
+            "sku": "P10", "name": "Produk Satuan", "unit_id": unit_id,
+            "cost_price": 1000, "selling_price": 2000, "min_stock": 0,
+        }, headers=headers)
+
+        res = client.delete(f"/units/{unit_id}", headers=headers)
+        assert res.status_code == 400
+        assert client.get("/units", headers=headers).json()[0]["id"] == unit_id
+
 
 # =============================================================================
 # D-03: Initial stock
