@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.dependencies import get_current_membership
+from app.dependencies import get_current_membership, require_owner
 from app.models.customer import Customer
 from app.models.supplier import Supplier
 from app.schemas.partner import (
@@ -127,7 +127,7 @@ def update_supplier(
 def delete_supplier(
     supplier_id: int,
     db: Session = Depends(get_db),
-    membership: object = Depends(get_current_membership),
+    membership: object = Depends(require_owner),
 ):
     supplier = db.execute(
         select(Supplier).where(
@@ -253,7 +253,7 @@ def update_customer(
 def delete_customer(
     customer_id: int,
     db: Session = Depends(get_db),
-    membership: object = Depends(get_current_membership),
+    membership: object = Depends(require_owner),
 ):
     customer = db.execute(
         select(Customer).where(

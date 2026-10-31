@@ -86,3 +86,18 @@ def get_current_membership(
         raise FORBIDDEN
 
     return membership
+
+
+OWNER_REQUIRED = HTTPException(
+    status_code=status.HTTP_403_FORBIDDEN,
+    detail="Hanya Owner yang dapat melakukan aksi ini",
+)
+
+
+def require_owner(
+    membership: Membership = Depends(get_current_membership),
+) -> Membership:
+    """Otorisasi vertikal: hanya Owner boleh melakukan aksi destruktif master data."""
+    if membership.role != "owner":
+        raise OWNER_REQUIRED
+    return membership

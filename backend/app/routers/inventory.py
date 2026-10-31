@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.dependencies import get_current_membership, get_current_user
+from app.dependencies import get_current_membership, get_current_user, require_owner
 from app.models.category import Category
 from app.models.product import Product
 from app.models.stock_balance import StockBalance
@@ -586,7 +586,7 @@ def adjust_stock(
 def deactivate_product(
     product_id: int = Query(..., description="Product ID to deactivate"),
     db: Session = Depends(get_db),
-    membership: object = Depends(get_current_membership),
+    membership: object = Depends(require_owner),
 ):
     """D-02: Deactivate a product that has been used in transactions."""
     product = db.get(Product, product_id)
