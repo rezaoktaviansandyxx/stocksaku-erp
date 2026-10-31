@@ -1,1 +1,541 @@
-<!-- Inventory template is inline in inventory.ts -->
+<div class="inventory-page">
+  <!-- Header Page -->
+  <div class="page-header">
+    <div class="page-title-box">
+      <h1>Inventaris & Stok</h1>
+      <p class="page-subtitle">Pantau posisi stok barang gudang, riwayat mutasi, dan pencatatan transaksi barang</p>
+    </div>
+    <div class="header-action-group">
+      <button class="btn-primary" (click)="openTransactionModal('inbound')">
+        <span class="btn-icon">＋</span> Transaksi Masuk / Keluar
+      </button>
+    </div>
+  </div>
+
+  <!-- Notification Banner -->
+  @if (successMessage()) {
+    <div class="alert-banner alert-success">
+      <span class="alert-icon">✓</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+  @if (error()) {
+    <div class="alert-banner alert-danger">
+      <span class="alert-icon">⚠</span>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <!-- Summary Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon-wrapper blue">
+        📦
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ productCount() }}</span>
+        <span class="stat-label">Total Jenis Produk</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-wrapper purple">
+        🏢
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ warehouseCount() }}</span>
+        <span class="stat-label">Gudang Aktif</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-wrapper emerald">
+        📊
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ totalStockItems() | number:'1.0-2' }}</span>
+        <span class="stat-label">Total Unit Fisik</span>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon-wrapper amber">
+        🔄
+      </div>
+      <div class="stat-content">
+        <span class="stat-value">{{ movements().length }}</span>
+        <span class="stat-label">Total Aktivitas Mutasi</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs Navigation -->
+  <div class="tabs-nav-bar">
+    <div class="tabs-group">
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab() === 'balances'"
+        (click)="activeTab.set('balances')"
+      >
+        <span>Saldo Stok</span>
+        <span class="tab-badge">{{ filteredBalances().length }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab() === 'movements'"
+        (click)="activeTab.set('movements')"
+      >
+        <span>Riwayat Mutasi</span>
+        <span class="tab-badge">{{ movements().length }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB 1: Saldo Stok -->
+  @if (activeTab() === 'balances') {
+    <!-- Filter Toolbar -->
+    <div class="filter-toolbar-card">
+      <div class="filter-inputs-group">
+        <div class="search-input-wrapper">
+          <span class="search-icon">🔍</span>
+          <input
+            type="text"
+            placeholder="Cari SKU atau nama produk..."
+            [(ngModel)]="balanceSearchTerm"
+          />
+        </div>
+
+        <select class="form-select" [(ngModel)]="balanceWarehouseFilter">
+          <option [ngValue]="null">Semua Gudang</option>
+          @for (w of warehouses(); track w.id) {
+            <option [ngValue]="w.id">{{ w.name }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="toolbar-stats">
+        Menampilkan <strong>{{ filteredBalances().length }}</strong> data saldo
+      </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="content-table-card">
+      @if (loading()) {
+        <div class="empty-state-box">
+          <div class="empty-state-icon">⏳</div>
+          <h3 class="empty-state-title">Memuat data inventaris...</h3>
+          <p class="empty-state-desc">Mohon tunggu beberapa saat selagi sistem mengambil informasi saldo terkini.</p>
+        </div>
+      } @else if (filteredBalances().length === 0) {
+        <div class="empty-state-box">
+          <div class="empty-state-icon">📦</div>
+          <h3 class="empty-state-title">Belum ada data saldo stok</h3>
+          <p class="empty-state-desc">
+            @if (balanceSearchTerm || balanceWarehouseFilter) {
+              Tidak ada produk yang cocok dengan pencarian / filter Anda.
+            } @else {
+              Stok produk masih kosong. Mulai masukkan saldo stok awal atau catat transaksi barang masuk.
+            }
+          </p>
+          @if (!balanceSearchTerm && !balanceWarehouseFilter) {
+            <button class="btn-primary" (click)="openTransactionModal('inbound')">
+              + Catat Barang Masuk
+            </button>
+          }
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="app-table">
+            <thead>
+              <tr>
+                <th>Produk</th>
+                <th>SKU</th>
+                <th>Gudang</th>
+                <th style="text-align: right;">Saldo Stok</th>
+                <th style="text-align: right;">Aksi Cepat</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (b of filteredBalances(); track b.id) {
+                <tr>
+                  <td>
+                    <div class="product-cell">
+                      <span class="product-name-text">{{ getProductName(b.product_id) }}</span>
+                      <span class="product-sub-info">ID: #{{ b.product_id }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="sku-pill">{{ getProductSku(b.product_id) }}</span>
+                  </td>
+                  <td>
+                    <span class="warehouse-pill">
+                      🏢 {{ getWarehouseName(b.warehouse_id) }}
+                    </span>
+                  </td>
+                  <td style="text-align: right;">
+                    <span class="stock-qty-value">{{ b.quantity | number:'1.0-2' }}</span>
+                  </td>
+                  <td style="text-align: right;">
+                    <button class="btn-secondary" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" (click)="quickAdjust(b)">
+                      Sesuaikan
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- TAB 2: Riwayat Mutasi -->
+  @if (activeTab() === 'movements') {
+    <!-- Filters Toolbar -->
+    <div class="filter-toolbar-card">
+      <div class="filter-inputs-group">
+        <select class="form-select" [(ngModel)]="movementProductId" (change)="fetchMovements()">
+          <option [ngValue]="null">Semua Produk</option>
+          @for (p of products(); track p.id) {
+            <option [ngValue]="p.id">{{ p.name }} ({{ p.sku }})</option>
+          }
+        </select>
+
+        <input
+          type="date"
+          class="form-input-date"
+          [(ngModel)]="movementStartDate"
+          (change)="fetchMovements()"
+          title="Tanggal Mulai"
+        />
+        <input
+          type="date"
+          class="form-input-date"
+          [(ngModel)]="movementEndDate"
+          (change)="fetchMovements()"
+          title="Tanggal Akhir"
+        />
+
+        @if (movementProductId || movementStartDate || movementEndDate) {
+          <button class="btn-secondary" (click)="resetMovementFilters()" style="padding: 0.5rem 0.875rem; font-size: 0.8125rem;">
+            Reset Filter
+          </button>
+        }
+      </div>
+
+      <div class="toolbar-stats">
+        Total: <strong>{{ movements().length }}</strong> riwayat mutasi
+      </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="content-table-card">
+      @if (loading()) {
+        <div class="empty-state-box">
+          <div class="empty-state-icon">⏳</div>
+          <h3 class="empty-state-title">Memuat riwayat mutasi...</h3>
+        </div>
+      } @else if (movements().length === 0) {
+        <div class="empty-state-box">
+          <div class="empty-state-icon">📑</div>
+          <h3 class="empty-state-title">Tidak ada riwayat mutasi</h3>
+          <p class="empty-state-desc">Belum ada transaksi mutasi stok yang tercatat untuk filter periode atau produk yang dipilih.</p>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="app-table">
+            <thead>
+              <tr>
+                <th>Waktu Transaksi</th>
+                <th>Produk</th>
+                <th>Gudang</th>
+                <th>Tipe Mutasi</th>
+                <th style="text-align: right;">Kuantitas</th>
+                <th>Catatan</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (m of movements(); track m.id) {
+                <tr>
+                  <td style="color: #64748b; font-size: 0.8125rem;">
+                    {{ formatDateTime(m.created_at) }}
+                  </td>
+                  <td>
+                    <div class="product-cell">
+                      <span class="product-name-text">{{ getProductName(m.product_id) }}</span>
+                      <span class="product-sub-info">{{ getProductSku(m.product_id) }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="warehouse-pill">
+                      🏢 {{ getWarehouseName(m.warehouse_id) }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="movement-type-badge" [ngClass]="m.movement_type">
+                      @if (m.movement_type === 'inbound') { 📥 Barang Masuk }
+                      @else if (m.movement_type === 'outbound') { 📤 Barang Keluar }
+                      @else if (m.movement_type === 'initial') { 🏁 Stok Awal }
+                      @else { ⚖️ Penyesuaian }
+                    </span>
+                  </td>
+                  <td style="text-align: right;">
+                    <span
+                      class="movement-qty-badge"
+                      [class.positive]="m.movement_type === 'inbound' || m.movement_type === 'initial'"
+                      [class.negative]="m.movement_type === 'outbound'"
+                    >
+                      @if (m.movement_type === 'inbound' || m.movement_type === 'initial') { + }
+                      @else if (m.movement_type === 'outbound') { - }
+                      {{ m.quantity | number:'1.0-2' }}
+                    </span>
+                  </td>
+                  <td>
+                    <span style="color: #475569; font-size: 0.8125rem;">
+                      {{ m.notes || '-' }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Modal Dialog Transaksi Masuk / Keluar -->
+  @if (showTransactionModal()) {
+    <div class="modal-overlay" (click)="closeTransactionModal()">
+      <div class="modal modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-header-text">
+            <h2>Transaksi {{ transactionLabel() }}</h2>
+            <p class="modal-subtitle">Pilih jenis mutasi dan lengkapi detail transaksi stok barang berikut</p>
+          </div>
+          <button type="button" class="btn-close" (click)="closeTransactionModal()" aria-label="Tutup">✕</button>
+        </div>
+
+        <form (ngSubmit)="onSubmitTransaction()" #form="ngForm" class="modal-form">
+          <div class="modal-body-scroll">
+            <!-- Error Alert -->
+            @if (txError()) {
+              <div class="alert-banner alert-danger" style="margin-bottom: 1rem;">
+                <span class="alert-icon">⚠</span>
+                <span>{{ txError() }}</span>
+              </div>
+            }
+
+            <!-- Type Selector Cards -->
+            <div class="type-selector-grid">
+              <div
+                class="type-option-card"
+                [class.selected]="txType === 'inbound'"
+                (click)="selectTxType('inbound')"
+              >
+                <span class="type-card-icon">📥</span>
+                <span class="type-card-name">Barang Masuk</span>
+              </div>
+
+              <div
+                class="type-option-card"
+                [class.selected]="txType === 'outbound'"
+                (click)="selectTxType('outbound')"
+              >
+                <span class="type-card-icon">📤</span>
+                <span class="type-card-name">Barang Keluar</span>
+              </div>
+
+              <div
+                class="type-option-card"
+                [class.selected]="txType === 'adjustment'"
+                (click)="selectTxType('adjustment')"
+              >
+                <span class="type-card-icon">⚖️</span>
+                <span class="type-card-name">Penyesuaian</span>
+              </div>
+
+              <div
+                class="type-option-card"
+                [class.selected]="txType === 'initial'"
+                (click)="selectTxType('initial')"
+              >
+                <span class="type-card-icon">🏁</span>
+                <span class="type-card-name">Stok Awal</span>
+              </div>
+            </div>
+
+            <!-- Form Row 1: Gudang & Produk -->
+            <div class="form-row">
+              <div class="form-group">
+                <div class="form-label-row">
+                  <label class="form-label">
+                    Pilih Gudang <span class="required">*</span>
+                  </label>
+                  <button type="button" class="btn-quick-add" (click)="openQuickWarehouseModal()">
+                    ＋ Tambah Gudang
+                  </button>
+                </div>
+                <div class="select-wrapper">
+                  <select class="form-control" [(ngModel)]="txWarehouseId" name="warehouse_id" required>
+                    @if (warehouses().length === 0) {
+                      <option [ngValue]="undefined" disabled>-- Belum ada gudang, klik + Tambah Gudang --</option>
+                    } @else {
+                      <option [ngValue]="undefined" disabled>-- Pilih Gudang Penyimpanan --</option>
+                      @for (w of warehouses(); track w.id) {
+                        <option [ngValue]="w.id">{{ w.name }}</option>
+                      }
+                    }
+                  </select>
+                </div>
+                @if (warehouses().length === 0) {
+                  <p class="field-hint text-warning">
+                    ⚠️ Belum ada gudang terdaftar. Klik <strong>+ Tambah Gudang</strong> di atas untuk membuat gudang penyimpanan.
+                  </p>
+                }
+              </div>
+
+              <div class="form-group">
+                <div class="form-label-row">
+                  <label class="form-label">
+                    Pilih Produk <span class="required">*</span>
+                  </label>
+                </div>
+                <div class="select-wrapper">
+                  <select class="form-control" [(ngModel)]="txProductId" name="product_id" required>
+                    <option [ngValue]="undefined" disabled>-- Pilih Produk / Item --</option>
+                    @for (p of products(); track p.id) {
+                      <option [ngValue]="p.id">{{ p.name }} ({{ p.sku }})</option>
+                    }
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Form Row 2: Kuantitas & Alasan -->
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">
+                  Kuantitas <span class="required">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  class="form-control"
+                  [(ngModel)]="txQuantity"
+                  name="quantity"
+                  required
+                  min="0.001"
+                  placeholder="0"
+                />
+              </div>
+
+              @if (txType === 'adjustment') {
+                <div class="form-group">
+                  <label class="form-label">
+                    Alasan Penyesuaian <span class="required">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    [(ngModel)]="txReason"
+                    name="reason"
+                    required
+                    placeholder="Contoh: Barang rusak, selisih opname, dll."
+                  />
+                </div>
+              }
+            </div>
+
+            <!-- Form Row 3: Catatan -->
+            <div class="form-group">
+              <label class="form-label">Catatan Tambahan</label>
+              <textarea
+                class="form-control"
+                [(ngModel)]="txNotes"
+                name="notes"
+                placeholder="Nomor referensi faktur, surat jalan, atau keterangan penting..."
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="btn-cancel"
+              (click)="closeTransactionModal()"
+            >
+              Batal
+            </button>
+            <button
+              type="submit"
+              class="btn-primary"
+              [disabled]="!txWarehouseId || !txProductId || form.invalid || submitting()"
+            >
+              @if (submitting()) {
+                Memproses...
+              } @else {
+                Simpan {{ transactionLabel() }}
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Quick Warehouse Modal -->
+  @if (showQuickWarehouseModal()) {
+    <div class="modal-overlay modal-quick-overlay" (click)="closeQuickWarehouseModal()">
+      <div class="modal modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-header-text">
+            <h2>Tambah Gudang Baru</h2>
+            <p class="modal-subtitle">Buat lokasi gudang penyimpanan baru untuk stok barang</p>
+          </div>
+          <button type="button" class="btn-close" (click)="closeQuickWarehouseModal()" aria-label="Tutup">✕</button>
+        </div>
+
+        <form (ngSubmit)="saveQuickWarehouse()" class="modal-form">
+          <div class="modal-body-scroll">
+            @if (quickWarehouseError()) {
+              <div class="alert-banner alert-danger" style="margin-bottom: 1rem;">
+                <span class="alert-icon">⚠</span>
+                <span>{{ quickWarehouseError() }}</span>
+              </div>
+            }
+
+            <div class="form-group">
+              <label class="form-label">
+                Nama Gudang <span class="required">*</span>
+              </label>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Contoh: Gudang Utama, Gudang Toko..."
+                [(ngModel)]="quickWarehouseName"
+                name="quickWarehouseName"
+                required
+                autofocus
+              />
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" (click)="closeQuickWarehouseModal()">Batal</button>
+            <button
+              type="submit"
+              class="btn-primary"
+              [disabled]="!quickWarehouseName.trim() || quickWarehouseSubmitting()"
+            >
+              {{ quickWarehouseSubmitting() ? 'Menyimpan...' : 'Simpan Gudang' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

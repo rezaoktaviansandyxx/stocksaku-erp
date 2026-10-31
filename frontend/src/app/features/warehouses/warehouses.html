@@ -1,0 +1,193 @@
+<div class="warehouses-page">
+  <!-- Header Page -->
+  <div class="page-header">
+    <div class="page-title-box">
+      <h1>Kelola Gudang</h1>
+      <p class="page-subtitle">Daftar lokasi gudang penyimpanan fisik dan pengelolaan status aktif gudang</p>
+    </div>
+    <div class="header-action-group">
+      <button class="btn-primary" (click)="openAddModal()">
+        <span class="btn-icon">＋</span> Tambah Gudang Baru
+      </button>
+    </div>
+  </div>
+
+  <!-- Notification Banner -->
+  @if (successMessage()) {
+    <div class="alert-banner alert-success">
+      <span class="alert-icon">✓</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+  @if (error()) {
+    <div class="alert-banner alert-danger">
+      <span class="alert-icon">⚠</span>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <!-- Toolbar & Search -->
+  <div class="filter-toolbar-card">
+    <div class="filter-inputs-group">
+      <div class="search-input-wrapper">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          placeholder="Cari nama gudang..."
+          [ngModel]="searchTerm()"
+          (ngModelChange)="searchTerm.set($event)"
+        />
+      </div>
+    </div>
+    <div class="toolbar-stats">
+      Total: <strong>{{ filteredWarehouses().length }}</strong> gudang terdaftar
+    </div>
+  </div>
+
+  <!-- Table Card -->
+  <div class="content-table-card">
+    @if (loading()) {
+      <div class="empty-state-box">
+        <div class="empty-state-icon">⏳</div>
+        <h3 class="empty-state-title">Memuat data gudang...</h3>
+      </div>
+    } @else if (filteredWarehouses().length === 0) {
+      <div class="empty-state-box">
+        <div class="empty-state-icon">🏢</div>
+        <h3 class="empty-state-title">Belum ada gudang ditemukan</h3>
+        <p class="empty-state-desc">
+          @if (searchTerm()) {
+            Tidak ada gudang yang cocok dengan kata kunci pencarian Anda.
+          } @else {
+            Belum ada gudang yang dibuat. Silakan tambahkan gudang penyimpanan barang pertama Anda.
+          }
+        </p>
+        @if (!searchTerm()) {
+          <button class="btn-primary" (click)="openAddModal()">
+            ＋ Tambah Gudang Baru
+          </button>
+        }
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="app-table">
+          <thead>
+            <tr>
+              <th style="width: 80px;">No</th>
+              <th>Nama Gudang</th>
+              <th>Status</th>
+              <th>Tanggal Dibuat</th>
+              <th style="text-align: right; width: 180px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (w of filteredWarehouses(); track w.id; let i = $index) {
+              <tr>
+                <td style="color: #64748b;">{{ i + 1 }}</td>
+                <td>
+                  <div class="warehouse-name-cell">
+                    <span class="warehouse-icon">🏢</span>
+                    <strong>{{ w.name }}</strong>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge-status" [class.active]="w.is_active" [class.inactive]="!w.is_active">
+                    <span class="badge-dot"></span>
+                    {{ w.is_active ? 'Aktif' : 'Non-aktif' }}
+                  </span>
+                </td>
+                <td style="color: #64748b; font-size: 0.8125rem;">
+                  {{ w.created_at | date:'dd MMM yyyy, HH:mm' }}
+                </td>
+                <td style="text-align: right;">
+                  <div class="action-cell">
+                    <button class="btn-small" (click)="openEditModal(w)" title="Edit Gudang">
+                      Edit
+                    </button>
+                    <button
+                      class="btn-small"
+                      [class.btn-danger]="w.is_active"
+                      (click)="toggleWarehouseStatus(w)"
+                      [title]="w.is_active ? 'Nonaktifkan Gudang' : 'Aktifkan Gudang'"
+                    >
+                      {{ w.is_active ? 'Nonaktifkan' : 'Aktifkan' }}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <!-- Modal Tambah / Edit Gudang -->
+  @if (showModal()) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-header-text">
+            <h2>{{ editing() ? 'Edit Gudang' : 'Tambah Gudang Baru' }}</h2>
+            <p class="modal-subtitle">
+              {{ editing() ? 'Perbarui informasi nama dan status gudang' : 'Tambahkan lokasi penyimpanan stok baru' }}
+            </p>
+          </div>
+          <button type="button" class="btn-close" (click)="closeModal()" aria-label="Tutup">✕</button>
+        </div>
+
+        <form (ngSubmit)="onSubmit()" class="modal-form">
+          <div class="modal-body-scroll">
+            @if (modalError()) {
+              <div class="alert-banner alert-danger" style="margin-bottom: 1rem;">
+                <span class="alert-icon">⚠</span>
+                <span>{{ modalError() }}</span>
+              </div>
+            }
+
+            <div class="form-group">
+              <label class="form-label">
+                Nama Gudang <span class="required">*</span>
+              </label>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Contoh: Gudang Pusat, Gudang Toko Utama"
+                [(ngModel)]="formName"
+                name="formName"
+                required
+                autofocus
+              />
+            </div>
+
+            <div class="form-group" style="margin-top: 1rem;">
+              <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="formIsActive"
+                  name="formIsActive"
+                  style="width: 16px; height: 16px; cursor: pointer;"
+                />
+                <span>Gudang Aktif</span>
+              </label>
+              <p style="font-size: 0.75rem; color: #64748b; margin: 0.25rem 0 0 1.5rem;">
+                Gudang aktif dapat dipilih untuk transaksi mutasi dan penyimpanan barang.
+              </p>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" (click)="closeModal()">Batal</button>
+            <button
+              type="submit"
+              class="btn-primary"
+              [disabled]="!formName.trim() || submitting()"
+            >
+              {{ submitting() ? 'Menyimpan...' : (editing() ? 'Simpan Perubahan' : 'Tambah Gudang') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+</div>

@@ -69,6 +69,10 @@ export class InventoryService {
     return this.api.post<CategoryResponse>('/categories', payload, headers);
   }
 
+  deleteCategory(id: number, headers?: Record<string, string>) {
+    return this.api.delete<void>(`/categories/${id}`, headers);
+  }
+
   // Units
   listUnits(params: { skip?: number; limit?: number }, headers?: Record<string, string>) {
     const qs = new URLSearchParams();
@@ -78,18 +82,30 @@ export class InventoryService {
     return this.api.get<UnitResponse[]>(path, headers);
   }
 
+  createUnit(payload: { name: string; symbol: string }, headers?: Record<string, string>) {
+    return this.api.post<UnitResponse>('/units', payload, headers);
+  }
+
+  deleteUnit(id: number, headers?: Record<string, string>) {
+    return this.api.delete<void>(`/units/${id}`, headers);
+  }
+
   // Warehouses
-  listWarehouses(params: { skip?: number; limit?: number; active_only?: boolean }, headers?: Record<string, string>) {
+  listWarehouses(params?: { skip?: number; limit?: number; active_only?: boolean }, headers?: Record<string, string>) {
     const qs = new URLSearchParams();
-    if (params.skip !== undefined) qs.set('skip', String(params.skip));
-    if (params.limit !== undefined) qs.set('limit', String(params.limit));
-    if (params.active_only !== undefined) qs.set('active_only', String(params.active_only));
+    if (params?.skip !== undefined) qs.set('skip', String(params.skip));
+    if (params?.limit !== undefined) qs.set('limit', String(params.limit));
+    if (params?.active_only !== undefined) qs.set('active_only', String(params.active_only));
     const path = `/warehouses${qs.toString() ? `?${qs.toString()}` : ''}`;
     return this.api.get<WarehouseResponse[]>(path, headers);
   }
 
   createWarehouse(payload: { name: string; is_active?: boolean }, headers?: Record<string, string>) {
     return this.api.post<WarehouseResponse>('/warehouses', payload, headers);
+  }
+
+  updateWarehouse(id: number, payload: { name?: string; is_active?: boolean }, headers?: Record<string, string>) {
+    return this.api.patch<WarehouseResponse>(`/warehouses/${id}`, payload, headers);
   }
 
   // Inventory operations

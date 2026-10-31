@@ -1,0 +1,368 @@
+<div class="products-page">
+  <!-- Header Page -->
+  <div class="header">
+    <div class="header-title-box">
+      <h1>Data Produk</h1>
+      <p class="header-subtitle">Kelola katalog produk, harga jual, harga modal, dan kategori</p>
+    </div>
+    <div class="header-actions-group">
+      <button class="btn-primary" (click)="openModal()">
+        <span>＋</span> Tambah Produk
+      </button>
+    </div>
+  </div>
+
+  <!-- Notification Banner -->
+  @if (successMessage()) {
+    <div class="alert-banner alert-success">
+      <span>✓</span> {{ successMessage() }}
+    </div>
+  }
+  @if (error()) {
+    <div class="error-banner">
+      <span>⚠</span> {{ error() }}
+    </div>
+  }
+
+  <!-- Search & Toolbar -->
+  <div class="toolbar-card">
+    <div class="search-input-wrapper">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        placeholder="Cari SKU atau nama produk..."
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="applyFilter()"
+      />
+    </div>
+    <div class="toolbar-stats">
+      Total: <strong>{{ products().length }}</strong> produk terdaftar
+    </div>
+  </div>
+
+  <!-- Products Table Card -->
+  <div class="table-card">
+    @if (loading()) {
+      <div class="empty-box">Memuat data produk...</div>
+    } @else if (products().length === 0) {
+      <div class="empty-box">
+        <p style="font-size: 1.125rem; font-weight: 600; color: #1e293b; margin-bottom: 0.5rem;">Tidak ada produk ditemukan</p>
+        <p style="margin-bottom: 1rem;">Mulai tambahkan produk pertama Anda untuk mengelola inventaris toko.</p>
+        <button class="btn-primary" (click)="openModal()">+ Tambah Produk Baru</button>
+      </div>
+    } @else {
+      <div class="table-wrapper">
+        <table class="product-table">
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Nama Produk</th>
+              <th>Kategori</th>
+              <th>Harga Beli</th>
+              <th>Harga Jual</th>
+              <th>Stok Min</th>
+              <th>Status</th>
+              <th style="text-align: right;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of paginatedProducts(); track p.id) {
+              <tr>
+                <td>
+                  <span class="sku-badge">{{ p.sku }}</span>
+                </td>
+                <td>
+                  <div class="product-name">{{ p.name }}</div>
+                </td>
+                <td>
+                  <span class="text-muted">{{ getCategoryName(p.category_id) }}</span>
+                </td>
+                <td>Rp {{ p.cost_price | number:'1.0-2' }}</td>
+                <td style="font-weight: 600; color: #0284c7;">Rp {{ p.selling_price | number:'1.0-2' }}</td>
+                <td>{{ p.min_stock }} {{ getUnitSymbol(p.unit_id) }}</td>
+                <td>
+                  <span class="badge-status" [class.active]="p.is_active" [class.inactive]="!p.is_active">
+                    <span class="badge-dot"></span>
+                    {{ p.is_active ? 'Aktif' : 'Non-aktif' }}
+                  </span>
+                </td>
+                <td style="text-align: right;">
+                  <div class="action-cell" style="justify-content: flex-end;">
+                    <button class="btn-small" (click)="openEdit(p)" title="Edit Produk">Edit</button>
+                    <button class="btn-small btn-danger" (click)="deactivate(p)" title="Nonaktifkan Produk">Hapus</button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      @if (totalPages() > 1) {
+        <div class="pagination">
+          <button (click)="prevPage()" [disabled]="currentPage() === 1">‹</button>
+          <span>Halaman {{ currentPage() }} dari {{ totalPages() }}</span>
+          <button (click)="nextPage()" [disabled]="currentPage() === totalPages()">›</button>
+        </div>
+      }
+    }
+  </div>
+
+  <!-- Add/Edit Product Modal -->
+  @if (showModal()) {
+    <div class="modal-overlay" (click)="closeModal()">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-header-text">
+            <h2>{{ editing() ? 'Edit Produk' : 'Tambah Produk Baru' }}</h2>
+            <p class="modal-subtitle">{{ editing() ? 'Perbarui informasi data produk' : 'Lengkapi detail informasi produk baru di bawah ini' }}</p>
+          </div>
+          <button type="button" class="btn-close" (click)="closeModal()" aria-label="Tutup">✕</button>
+        </div>
+
+        <form (ngSubmit)="onSubmit()" #form="ngForm" class="modal-form">
+          <div class="modal-body-scroll">
+            <div class="form-grid">
+              <div class="form-group full-width">
+                <label for="prod-sku">
+                  SKU / Kode Produk <span class="required">*</span>
+                </label>
+                <input
+                  id="prod-sku"
+                  type="text"
+                  placeholder="Contoh: PRD-001"
+                  [(ngModel)]="formModel.sku"
+                  name="sku"
+                  required
+                />
+              </div>
+
+              <div class="form-group full-width">
+                <label for="prod-name">
+                  Nama Produk <span class="required">*</span>
+                </label>
+                <input
+                  id="prod-name"
+                  type="text"
+                  placeholder="Masukkan nama produk"
+                  [(ngModel)]="formModel.name"
+                  name="name"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="prod-cost">
+                  Harga Beli (Modal) <span class="required">*</span>
+                </label>
+                <div class="input-prefix-wrapper">
+                  <span class="input-prefix">Rp</span>
+                  <input
+                    id="prod-cost"
+                    type="number"
+                    step="0.01"
+                    placeholder="0"
+                    [(ngModel)]="formModel.cost_price"
+                    name="cost_price"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="prod-price">
+                  Harga Jual <span class="required">*</span>
+                </label>
+                <div class="input-prefix-wrapper">
+                  <span class="input-prefix">Rp</span>
+                  <input
+                    id="prod-price"
+                    type="number"
+                    step="0.01"
+                    placeholder="0"
+                    [(ngModel)]="formModel.selling_price"
+                    name="selling_price"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div class="form-group full-width">
+                <label for="prod-min-stock">
+                  Stok Minimum (Peringatan)
+                </label>
+                <input
+                  id="prod-min-stock"
+                  type="number"
+                  step="0.001"
+                  placeholder="0"
+                  [(ngModel)]="formModel.min_stock"
+                  name="min_stock"
+                />
+              </div>
+
+              <!-- Field Kategori dengan Quick Add Button -->
+              <div class="form-group">
+                <div class="form-label-row">
+                  <label for="prod-category">Kategori</label>
+                  <button type="button" class="btn-quick-add" (click)="openQuickCategory()">
+                    ＋ Tambah Baru
+                  </button>
+                </div>
+                <div class="field-with-quick-add">
+                  <div class="select-wrapper">
+                    <select id="prod-category" [(ngModel)]="formModel.category_id" name="category_id">
+                      <option [ngValue]="null">Pilih kategori (opsional)</option>
+                      @for (c of categories(); track c.id) {
+                        <option [ngValue]="c.id">{{ c.name }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Field Satuan dengan Quick Add Button -->
+              <div class="form-group">
+                <div class="form-label-row">
+                  <label for="prod-unit">Satuan <span class="required">*</span></label>
+                  <button type="button" class="btn-quick-add" (click)="openQuickUnit()">
+                    ＋ Tambah Baru
+                  </button>
+                </div>
+                <div class="field-with-quick-add">
+                  <div class="select-wrapper">
+                    <select id="prod-unit" [(ngModel)]="formModel.unit_id" name="unit_id" required>
+                      <option [ngValue]="0">Pilih satuan</option>
+                      @for (u of units(); track u.id) {
+                        <option [ngValue]="u.id">{{ u.name }} ({{ u.symbol }})</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" (click)="closeModal()">Batal</button>
+            <button type="submit" [disabled]="form.invalid || formModel.unit_id === 0" class="btn-primary">
+              {{ editing() ? 'Simpan Perubahan' : 'Tambah Produk' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Quick Add Category Modal (Popup Kecil) -->
+  @if (showQuickCategoryModal()) {
+    <div class="modal-overlay modal-quick-overlay" (click)="closeQuickCategory()">
+      <div class="modal modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-header-text">
+            <h2>+ Tambah Kategori Baru</h2>
+            <p class="modal-subtitle">Kategori akan langsung terpilih untuk produk ini</p>
+          </div>
+          <button type="button" class="btn-close" (click)="closeQuickCategory()">✕</button>
+        </div>
+
+        <form (ngSubmit)="saveQuickCategory()">
+          <div class="modal-body-scroll">
+            <div class="form-group">
+              <label for="quick-cat-name">Nama Kategori <span class="required">*</span></label>
+              <input
+                id="quick-cat-name"
+                type="text"
+                placeholder="Contoh: Snack, Minuman, Sembako"
+                [(ngModel)]="quickCategoryName"
+                name="quickCategoryName"
+                required
+                autofocus
+              />
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" (click)="closeQuickCategory()">Batal</button>
+            <button
+              type="submit"
+              class="btn-primary"
+              [disabled]="!quickCategoryName.trim() || quickActionLoading()"
+            >
+              {{ quickActionLoading() ? 'Menyimpan...' : 'Simpan & Pilih' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Quick Add Unit Modal (Popup Kecil) -->
+  @if (showQuickUnitModal()) {
+    <div class="modal-overlay modal-quick-overlay" (click)="closeQuickUnit()">
+      <div class="modal modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-header-text">
+            <h2>+ Tambah Satuan Baru</h2>
+            <p class="modal-subtitle">Satuan akan langsung terpilih untuk produk ini</p>
+          </div>
+          <button type="button" class="btn-close" (click)="closeQuickUnit()">✕</button>
+        </div>
+
+        <form (ngSubmit)="saveQuickUnit()">
+          <div class="modal-body-scroll">
+            <div class="form-group">
+              <label for="quick-unit-name">Nama Satuan <span class="required">*</span></label>
+              <input
+                id="quick-unit-name"
+                type="text"
+                placeholder="Contoh: Pieces, Kilogram, Kaleng"
+                [(ngModel)]="quickUnitName"
+                name="quickUnitName"
+                required
+                autofocus
+              />
+            </div>
+
+            <div class="form-group" style="margin-top: 1rem;">
+              <label for="quick-unit-symbol">Simbol Satuan <span class="required">*</span></label>
+              <input
+                id="quick-unit-symbol"
+                type="text"
+                placeholder="Contoh: pcs, kg, klg, btl"
+                [(ngModel)]="quickUnitSymbol"
+                name="quickUnitSymbol"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn-cancel" (click)="closeQuickUnit()">Batal</button>
+            <button
+              type="submit"
+              class="btn-primary"
+              [disabled]="!quickUnitName.trim() || !quickUnitSymbol.trim() || quickActionLoading()"
+            >
+              {{ quickActionLoading() ? 'Menyimpan...' : 'Simpan & Pilih' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Confirm Delete / Deactivate Dialog -->
+  <app-confirm-dialog
+    [isOpen]="showConfirmDelete()"
+    title="Nonaktifkan Produk"
+    [message]="'Apakah Anda yakin ingin menonaktifkan produk &quot;' + (productToDelete()?.name || '') + '&quot;? Produk tidak akan muncul di daftar transaksi aktif.'"
+    confirmText="Ya, Nonaktifkan"
+    cancelText="Batal"
+    variant="danger"
+    [loading]="deleteLoading()"
+    (confirmed)="confirmDeactivate()"
+    (cancelled)="cancelDelete()"
+  ></app-confirm-dialog>
+</div>

@@ -1,0 +1,288 @@
+<div class="cat-unit-page">
+  <!-- Header Page -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title-text">Kategori & Satuan</h1>
+      <p class="page-subtitle-text">Kelola klasifikasi kategori dan satuan pengukuran produk untuk organisasi Anda</p>
+    </div>
+    <div class="header-action-group">
+      @if (activeTab() === 'categories') {
+        <button class="btn btn-primary" (click)="openAddCategory()">
+          <span class="btn-icon">＋</span> Tambah Kategori
+        </button>
+      } @else {
+        <button class="btn btn-primary" (click)="openAddUnit()">
+          <span class="btn-icon">＋</span> Tambah Satuan
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Notification Banner -->
+  @if (successMessage()) {
+    <div class="alert-banner alert-success">
+      <span class="alert-icon">✓</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+  @if (errorMessage()) {
+    <div class="alert-banner alert-danger">
+      <span class="alert-icon">⚠</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- Tab Selector -->
+  <div class="tab-nav-wrapper">
+    <div class="tab-nav">
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab() === 'categories'"
+        (click)="activeTab.set('categories')"
+      >
+        <span class="tab-label">Kategori Produk</span>
+        <span class="tab-badge">{{ categories().length }}</span>
+      </button>
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab() === 'units'"
+        (click)="activeTab.set('units')"
+      >
+        <span class="tab-label">Satuan Produk</span>
+        <span class="tab-badge">{{ units().length }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Tab Content: Categories -->
+  @if (activeTab() === 'categories') {
+    <div class="card-table-section">
+      @if (loading()) {
+        <div class="empty-state">
+          <p>Memuat daftar kategori...</p>
+        </div>
+      } @else if (categories().length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon">🏷️</div>
+          <h3>Belum Ada Kategori</h3>
+          <p>Mulai tambahkan kategori untuk mengelompokkan produk Anda dengan lebih rapi.</p>
+          <button class="btn btn-primary" (click)="openAddCategory()">+ Tambah Kategori Pertama</button>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="app-table">
+            <thead>
+              <tr>
+                <th style="width: 80px;">No</th>
+                <th>Nama Kategori</th>
+                <th>Tanggal Dibuat</th>
+                <th style="width: 120px; text-align: center;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (cat of categories(); track cat.id; let i = $index) {
+                <tr>
+                  <td class="text-muted">{{ i + 1 }}</td>
+                  <td>
+                    <span class="category-name-badge">{{ cat.name }}</span>
+                  </td>
+                  <td class="text-muted">
+                    {{ cat.created_at | date: 'dd MMM yyyy, HH:mm' }}
+                  </td>
+                  <td style="text-align: center;">
+                    <button
+                      class="btn-icon-danger"
+                      (click)="deleteCategory(cat)"
+                      title="Hapus Kategori"
+                    >
+                      🗑️ Hapus
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Tab Content: Units -->
+  @if (activeTab() === 'units') {
+    <div class="card-table-section">
+      @if (loading()) {
+        <div class="empty-state">
+          <p>Memuat daftar satuan...</p>
+        </div>
+      } @else if (units().length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon">📏</div>
+          <h3>Belum Ada Satuan</h3>
+          <p>Buat satuan ukuran (misal: Pcs, Kg, Box, Liter) untuk menghitung kuantitas stok produk.</p>
+          <button class="btn btn-primary" (click)="openAddUnit()">+ Tambah Satuan Pertama</button>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="app-table">
+            <thead>
+              <tr>
+                <th style="width: 80px;">No</th>
+                <th>Nama Satuan</th>
+                <th>Simbol / Kode</th>
+                <th>Tanggal Dibuat</th>
+                <th style="width: 120px; text-align: center;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (u of units(); track u.id; let i = $index) {
+                <tr>
+                  <td class="text-muted">{{ i + 1 }}</td>
+                  <td class="font-medium">{{ u.name }}</td>
+                  <td>
+                    <span class="unit-symbol-pill">{{ u.symbol }}</span>
+                  </td>
+                  <td class="text-muted">
+                    {{ u.created_at | date: 'dd MMM yyyy, HH:mm' }}
+                  </td>
+                  <td style="text-align: center;">
+                    <button
+                      class="btn-icon-danger"
+                      (click)="deleteUnit(u)"
+                      title="Hapus Satuan"
+                    >
+                      🗑️ Hapus
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Modal Tambah Kategori -->
+  @if (showCategoryModal()) {
+    <div class="modal-overlay" (click)="closeCategoryModal()">
+      <div class="modal-box modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title">
+            <h3>Tambah Kategori Baru</h3>
+            <p>Masukkan nama kelompok atau kategori produk</p>
+          </div>
+          <button class="btn-close" (click)="closeCategoryModal()" type="button">✕</button>
+        </div>
+
+        <form (ngSubmit)="saveCategory()" #catForm="ngForm">
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="cat-name-input">
+                Nama Kategori <span class="required">*</span>
+              </label>
+              <input
+                id="cat-name-input"
+                type="text"
+                name="categoryName"
+                placeholder="Contoh: Makanan, Minuman, Elektronik"
+                [(ngModel)]="categoryName"
+                required
+                autofocus
+              />
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeCategoryModal()">
+              Batal
+            </button>
+            <button
+              type="submit"
+              class="btn btn-primary"
+              [disabled]="!categoryName.trim() || actionLoading()"
+            >
+              {{ actionLoading() ? 'Menyimpan...' : 'Simpan Kategori' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Modal Tambah Satuan -->
+  @if (showUnitModal()) {
+    <div class="modal-overlay" (click)="closeUnitModal()">
+      <div class="modal-box modal-sm" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title">
+            <h3>Tambah Satuan Baru</h3>
+            <p>Definisikan nama satuan dan simbol singkatnya</p>
+          </div>
+          <button class="btn-close" (click)="closeUnitModal()" type="button">✕</button>
+        </div>
+
+        <form (ngSubmit)="saveUnit()" #unitForm="ngForm">
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="unit-name-input">
+                Nama Satuan <span class="required">*</span>
+              </label>
+              <input
+                id="unit-name-input"
+                type="text"
+                name="unitName"
+                placeholder="Contoh: Pieces, Kilogram, Box, Meter"
+                [(ngModel)]="unitName"
+                required
+                autofocus
+              />
+            </div>
+
+            <div class="form-group" style="margin-top: 1rem;">
+              <label for="unit-symbol-input">
+                Simbol Satuan <span class="required">*</span>
+              </label>
+              <input
+                id="unit-symbol-input"
+                type="text"
+                name="unitSymbol"
+                placeholder="Contoh: pcs, kg, bx, m"
+                [(ngModel)]="unitSymbol"
+                required
+              />
+              <span class="help-text">Simbol singkat yang akan dicetak di kwitansi/laporan.</span>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeUnitModal()">
+              Batal
+            </button>
+            <button
+              type="submit"
+              class="btn btn-primary"
+              [disabled]="!unitName.trim() || !unitSymbol.trim() || actionLoading()"
+            >
+              {{ actionLoading() ? 'Menyimpan...' : 'Simpan Satuan' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Confirm Delete Modal (Category / Unit) -->
+  <app-confirm-dialog
+    [isOpen]="showConfirmDelete()"
+    [title]="confirmTitle"
+    [message]="confirmMessage"
+    confirmText="Ya, Hapus"
+    cancelText="Batal"
+    variant="danger"
+    [loading]="deleteLoading()"
+    (confirmed)="confirmDelete()"
+    (cancelled)="cancelDelete()"
+  ></app-confirm-dialog>
+</div>
