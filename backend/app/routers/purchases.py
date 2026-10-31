@@ -173,7 +173,7 @@ def create_purchase_order(
         warehouse_id=payload.warehouse_id,
         created_by=membership.user_id,
         order_number=order_number,
-        status="Ordered",
+        status="Draft",
         total_amount=total_amount,
         notes=payload.notes,
         items=po_items,
@@ -236,6 +236,39 @@ def get_purchase_order_detail(
     return _format_po_response(po, db)
 
 
+@router.post("/{po_id}/send", response_model=PurchaseOrderResponse)
+def send_purchase_order(
+    po_id: int,
+    db: Session = Depends(get_db),
+    membership: Membership = Depends(get_current_membership),
+):
+    """Transisi Draft -> Ordered. Satu arah dan hanya dari Draft."""
+    stmt = (
+        select(PurchaseOrder)
+        .where(
+            PurchaseOrder.id == po_id,
+            PurchaseOrder.organization_id == membership.organization_id,
+        )
+        .with_for_update()
+    )
+    po = db.execute(stmt).scalar_one_or_none()
+    if not po:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Pesanan pembelian tidak ditemukan",
+        )
+    if po.status != "Draft":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Hanya Purchase Order berstatus Draft yang dapat dikirim",
+        )
+
+    po.status = "Ordered"
+    db.commit()
+    db.refresh(po)
+    return _format_po_response(po, db)
+
+
 @router.post("/{po_id}/receive", response_model=PurchaseOrderResponse)
 def receive_purchase_order(
     po_id: int,
@@ -246,7 +279,7 @@ def receive_purchase_order(
     """
     Menerima barang dari Purchase Order.
     Operasi ini bersifat atomik:
-    1. Memverifikasi status PO (hanya yang berstatus 'Ordered' atau 'Draft' yang dapat diterima).
+    1. Memverifikasi status PO (hanya yang berstatus 'Ordered' yang dapat diterima).
     2. Menentukan gudang target (dari payload atau gudang default PO atau gudang aktif pertama organisasi).
     3. Mengupdate received_quantity pada setiap item.
     4. Menambah saldo di stock_balances.
@@ -269,11 +302,10 @@ def receive_purchase_order(
             detail="Pesanan pembelian tidak ditemukan",
         )
 
-    # Idempotent check
-    if po.status == "Received":
+    if po.status != "Ordered":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Pesanan pembelian sudah pernah diterima sebelumnya",
+            detail="Hanya Purchase Order berstatus Ordered yang dapat diterima",
         )
 
     # Determine warehouse

@@ -108,7 +108,7 @@ def _setup(client):
 def test_create_and_list_purchase_order(client, session_factory):
     headers, wh_id, prod_id, sup_id = _setup(client)
 
-    # 1. Create Purchase Order
+    # 1. Create Purchase Order (starts as Draft)
     payload = {
         "supplier_id": sup_id,
         "warehouse_id": wh_id,
@@ -124,7 +124,7 @@ def test_create_and_list_purchase_order(client, session_factory):
     res = client.post("/purchases", json=payload, headers=headers)
     assert res.status_code == 201
     data = res.json()
-    assert data["status"] == "Ordered"
+    assert data["status"] == "Draft"
     assert data["supplier_id"] == sup_id
     assert data["supplier_name"] == "PT Beras Makmur"
     assert float(data["total_amount"]) == 1000000.00
@@ -138,6 +138,7 @@ def test_create_and_list_purchase_order(client, session_factory):
     orders = list_res.json()
     assert len(orders) == 1
     assert orders[0]["id"] == po_id
+    assert orders[0]["status"] == "Draft"
 
     # 3. Get Detail
     detail_res = client.get(f"/purchases/{po_id}", headers=headers)
@@ -153,7 +154,7 @@ def test_receive_purchase_order_increases_stock_and_records_movement(client, ses
     assert bal_res.status_code == 200
     assert len(bal_res.json()) == 0
 
-    # 2. Create PO for 15 units
+    # 2. Create PO for 15 units (starts as Draft)
     po_res = client.post("/purchases", json={
         "supplier_id": sup_id,
         "warehouse_id": wh_id,
@@ -161,6 +162,17 @@ def test_receive_purchase_order_increases_stock_and_records_movement(client, ses
     }, headers=headers)
     assert po_res.status_code == 201
     po_id = po_res.json()["id"]
+    assert po_res.json()["status"] == "Draft"
+
+    # Receive should fail when Draft
+    draft_rec = client.post(f"/purchases/{po_id}/receive", headers=headers)
+    assert draft_rec.status_code == 400
+    assert "Ordered" in draft_rec.json()["detail"]
+
+    # Send PO -> Ordered
+    send_res = client.post(f"/purchases/{po_id}/send", headers=headers)
+    assert send_res.status_code == 200
+    assert send_res.json()["status"] == "Ordered"
 
     # 3. Receive PO
     rec_res = client.post(f"/purchases/{po_id}/receive", json={"notes": "Barang sudah diterima lengkap"}, headers=headers)
@@ -190,7 +202,38 @@ def test_receive_purchase_order_increases_stock_and_records_movement(client, ses
     # 6. Idempotency test: Receiving again should be rejected
     dup_res = client.post(f"/purchases/{po_id}/receive", headers=headers)
     assert dup_res.status_code == 400
-    assert "pernah diterima" in dup_res.json()["detail"]
+    assert "Ordered" in dup_res.json()["detail"]
+
+
+def test_create_po_starts_as_draft(client, session_factory):
+    headers, wh_id, prod_id, sup_id = _setup(client)
+    res = client.post("/purchases", headers=headers, json={
+        "supplier_id": sup_id, "items": [{"product_id": prod_id, "quantity": 3, "unit_cost": 50000}],
+    })
+    assert res.status_code == 201
+    assert res.json()["status"] == "Draft"
+
+
+def test_send_po_transitions_draft_to_ordered_once(client, session_factory):
+    headers, wh_id, prod_id, sup_id = _setup(client)
+    po_id = client.post("/purchases", headers=headers, json={
+        "supplier_id": sup_id, "items": [{"product_id": prod_id, "quantity": 3, "unit_cost": 50000}],
+    }).json()["id"]
+
+    assert client.post(f"/purchases/{po_id}/send", headers=headers).status_code == 200
+    # send kedua ditolak — transisi satu arah per status
+    res2 = client.post(f"/purchases/{po_id}/send", headers=headers)
+    assert res2.status_code == 409
+
+
+def test_receive_rejected_for_draft_po(client, session_factory):
+    headers, wh_id, prod_id, sup_id = _setup(client)
+    po_id = client.post("/purchases", headers=headers, json={
+        "supplier_id": sup_id, "items": [{"product_id": prod_id, "quantity": 3, "unit_cost": 50000}],
+    }).json()["id"]
+
+    res = client.post(f"/purchases/{po_id}/receive", headers=headers, json={"notes": "langsung"})
+    assert res.status_code == 400
 
 
 def test_purchase_order_tenant_isolation(client, session_factory):
