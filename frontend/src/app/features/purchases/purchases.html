@@ -1,0 +1,322 @@
+<div class="purchases-page">
+  <!-- Header Bar -->
+  <div class="header-actions">
+    <div>
+      <h2 class="section-title">Pesanan Pembelian (Purchase Orders)</h2>
+      <p class="section-subtitle">Kelola pengadaan barang dari supplier dan penerimaan inventaris.</p>
+    </div>
+    <button class="btn btn-primary" (click)="openCreateModal()">
+      <span>➕ Buat PO Baru</span>
+    </button>
+  </div>
+
+  <!-- Toast Notification -->
+  @if (successMessage()) {
+    <div class="toast-success">
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="toast-error">
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- Filters -->
+  <div class="filters-card">
+    <div class="filters-grid">
+      <div class="form-group">
+        <label>Filter Status</label>
+        <select [(ngModel)]="selectedStatus" (change)="loadData()">
+          <option value="">Semua Status</option>
+          <option value="Ordered">Ordered (Dipesan)</option>
+          <option value="Received">Received (Diterima)</option>
+          <option value="Draft">Draft</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Filter Supplier</label>
+        <select [(ngModel)]="selectedSupplierId" (change)="loadData()">
+          <option [ngValue]="null">Semua Supplier</option>
+          @for (s of suppliers(); track s.id) {
+            <option [ngValue]="s.id">{{ s.name }}</option>
+          }
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- PO Table -->
+  <div class="card table-card">
+    @if (loading()) {
+      <div class="state-container">
+        <div class="spinner"></div>
+        <p>Memuat data pesanan pembelian...</p>
+      </div>
+    } @else if (purchases().length === 0) {
+      <div class="state-container empty-state">
+        <span class="empty-icon">📦</span>
+        <h3>Belum ada pesanan pembelian</h3>
+        <p>Buat pesanan pembelian pertama Anda untuk memulai pengadaan barang ke inventaris.</p>
+        <button class="btn btn-outline" (click)="openCreateModal()">Buat Pesanan Pembelian</button>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>No. Pesanan</th>
+              <th>Tanggal</th>
+              <th>Supplier</th>
+              <th>Total Nominal</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (po of purchases(); track po.id) {
+              <tr>
+                <td class="font-mono font-medium">{{ po.order_number }}</td>
+                <td>{{ formatDate(po.created_at) }}</td>
+                <td>{{ po.supplier_name || '-' }}</td>
+                <td class="font-semibold">{{ formatCurrency(po.total_amount) }}</td>
+                <td>
+                  <span class="badge" [class.badge-ordered]="po.status === 'Ordered'" [class.badge-received]="po.status === 'Received'">
+                    {{ po.status === 'Received' ? 'Diterima' : (po.status === 'Ordered' ? 'Dipesan' : po.status) }}
+                  </span>
+                </td>
+                <td class="action-buttons">
+                  <button class="btn btn-sm btn-outline" (click)="viewDetail(po)">Detail</button>
+                  @if (po.status !== 'Received') {
+                    <button class="btn btn-sm btn-success" (click)="openReceiveModal(po)">Terima Barang</button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <!-- Create PO Modal -->
+  @if (showCreateModal()) {
+    <div class="modal-backdrop" (click)="closeCreateModal()">
+      <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Buat Pesanan Pembelian (PO)</h3>
+          <button class="btn-close" (click)="closeCreateModal()">✕</button>
+        </div>
+
+        <form (ngSubmit)="submitCreate()">
+          <div class="modal-body">
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>Supplier <span class="required">*</span></label>
+                <select [(ngModel)]="newPo.supplier_id" name="supplier_id" required>
+                  <option [ngValue]="null" disabled selected>Pilih Supplier</option>
+                  @for (s of suppliers(); track s.id) {
+                    <option [ngValue]="s.id">{{ s.name }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-group flex-1">
+                <label>Gudang Tujuan</label>
+                <select [(ngModel)]="newPo.warehouse_id" name="warehouse_id">
+                  <option [ngValue]="null">Default / Otomatis</option>
+                  @for (w of warehouses(); track w.id) {
+                    <option [ngValue]="w.id">{{ w.name }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Catatan</label>
+              <input type="text" [(ngModel)]="newPo.notes" name="notes" placeholder="Catatan opsional..." />
+            </div>
+
+            <!-- Items Dynamic Table -->
+            <div class="items-section">
+              <div class="items-header">
+                <h4>Daftar Barang</h4>
+                <button type="button" class="btn btn-sm btn-outline" (click)="addItemRow()">+ Tambah Baris</button>
+              </div>
+
+              <table class="items-table">
+                <thead>
+                  <tr>
+                    <th style="width: 45%;">Produk <span class="required">*</span></th>
+                    <th style="width: 20%;">Jumlah <span class="required">*</span></th>
+                    <th style="width: 25%;">Harga Beli Satuan <span class="required">*</span></th>
+                    <th style="width: 10%;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of poItemRows; track $index) {
+                    <tr>
+                      <td>
+                        <select [(ngModel)]="row.product_id" [name]="'product_' + $index" (change)="onProductSelected(row)" required>
+                          <option [ngValue]="null" disabled>Pilih Produk</option>
+                          @for (p of products(); track p.id) {
+                            <option [ngValue]="p.id">{{ p.name }} ({{ p.sku }})</option>
+                          }
+                        </select>
+                      </td>
+                      <td>
+                        <input type="number" step="any" min="0.001" [(ngModel)]="row.quantity" [name]="'qty_' + $index" required />
+                      </td>
+                      <td>
+                        <input type="number" step="100" min="0" [(ngModel)]="row.unit_cost" [name]="'cost_' + $index" required />
+                      </td>
+                      <td>
+                        @if (poItemRows.length > 1) {
+                          <button type="button" class="btn-delete-row" (click)="removeItemRow($index)">🗑️</button>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+
+              <div class="order-total-summary">
+                <span>Total Estimasi:</span>
+                <span class="total-amount">{{ formatCurrency(calculateEstimatedTotal()) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" (click)="closeCreateModal()">Batal</button>
+            <button type="submit" class="btn btn-primary" [disabled]="submitting()">
+              {{ submitting() ? 'Menyimpan...' : 'Buat Pesanan' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Detail Modal -->
+  @if (selectedPo()) {
+    <div class="modal-backdrop" (click)="closeDetailModal()">
+      <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3>Detail PO: {{ selectedPo()?.order_number }}</h3>
+            <span class="badge" [class.badge-ordered]="selectedPo()?.status === 'Ordered'" [class.badge-received]="selectedPo()?.status === 'Received'">
+              {{ selectedPo()?.status === 'Received' ? 'Diterima' : 'Dipesan' }}
+            </span>
+          </div>
+          <button class="btn-close" (click)="closeDetailModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="po-meta-grid">
+            <div>
+              <strong>Supplier:</strong>
+              <p>{{ selectedPo()?.supplier_name || '-' }}</p>
+            </div>
+            <div>
+              <strong>Gudang Penerima:</strong>
+              <p>{{ selectedPo()?.warehouse_name || '-' }}</p>
+            </div>
+            <div>
+              <strong>Tanggal Dibuat:</strong>
+              <p>{{ formatDate(selectedPo()?.created_at) }}</p>
+            </div>
+            @if (selectedPo()?.received_at) {
+              <div>
+                <strong>Tanggal Diterima:</strong>
+                <p>{{ formatDate(selectedPo()?.received_at) }}</p>
+              </div>
+            }
+          </div>
+
+          <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Daftar Barang</h4>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Produk</th>
+                <th>SKU</th>
+                <th>Qty Dipesan</th>
+                <th>Qty Diterima</th>
+                <th>Harga Satuan</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (it of selectedPo()?.items; track it.id) {
+                <tr>
+                  <td>{{ it.product_name || '-' }}</td>
+                  <td class="font-mono">{{ it.product_sku || '-' }}</td>
+                  <td>{{ it.quantity }}</td>
+                  <td class="font-semibold">{{ it.received_quantity }}</td>
+                  <td>{{ formatCurrency(it.unit_cost) }}</td>
+                  <td class="font-semibold">{{ formatCurrency(it.subtotal) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+
+          <div class="order-total-summary">
+            <span>Total:</span>
+            <span class="total-amount">{{ formatCurrency(selectedPo()?.total_amount || 0) }}</span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-outline" (click)="closeDetailModal()">Tutup</button>
+          @if (selectedPo()?.status !== 'Received') {
+            <button class="btn btn-success" (click)="openReceiveModal(selectedPo()!)">Terima Barang</button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Receive Confirmation Modal -->
+  @if (poToReceive()) {
+    <div class="modal-backdrop" (click)="closeReceiveModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Konfirmasi Penerimaan Barang</h3>
+          <button class="btn-close" (click)="closeReceiveModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <p>
+            Anda akan memproses penerimaan untuk pesanan <strong>{{ poToReceive()?.order_number }}</strong> dari supplier <strong>{{ poToReceive()?.supplier_name }}</strong>.
+          </p>
+          <div class="alert-info">
+            Barang akan otomatis masuk dan menambah saldo inventaris sesuai kuantitas yang dipesan.
+          </div>
+
+          <div class="form-group" style="margin-top: 1rem;">
+            <label>Pilih Gudang Masuk</label>
+            <select [(ngModel)]="receiveWarehouseId">
+              @for (w of warehouses(); track w.id) {
+                <option [ngValue]="w.id">{{ w.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Catatan Penerimaan</label>
+            <input type="text" [(ngModel)]="receiveNotes" placeholder="Catatan penerimaan..." />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-outline" (click)="closeReceiveModal()">Batal</button>
+          <button class="btn btn-success" (click)="confirmReceive()" [disabled]="submitting()">
+            {{ submitting() ? 'Memproses...' : 'Konfirmasi Terima Barang' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

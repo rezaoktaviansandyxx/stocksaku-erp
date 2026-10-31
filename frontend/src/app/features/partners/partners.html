@@ -1,0 +1,235 @@
+<div class="partners-page">
+  <!-- Header Page -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title-text">Kontak & Mitra Bisnis</h1>
+      <p class="page-subtitle-text">Kelola data master Supplier untuk pengadaan barang dan Pelanggan untuk penjualan</p>
+    </div>
+    <div class="header-action-group">
+      <button class="btn btn-primary" (click)="openAddModal()">
+        <span class="btn-icon">＋</span>
+        <span>Tambah {{ activeTab() === 'suppliers' ? 'Supplier' : 'Pelanggan' }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Notification Banner -->
+  @if (successMessage()) {
+    <div class="alert-banner alert-success">
+      <span class="alert-icon">✓</span>
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+  @if (errorMessage()) {
+    <div class="alert-banner alert-danger">
+      <span class="alert-icon">⚠</span>
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <!-- Tab Selector & Search -->
+  <div class="tab-and-search-wrapper">
+    <div class="tab-nav">
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab() === 'suppliers'"
+        (click)="activeTab.set('suppliers')"
+      >
+        <span class="tab-label">Supplier (Pemasok)</span>
+        <span class="tab-badge">{{ suppliers().length }}</span>
+      </button>
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="activeTab() === 'customers'"
+        (click)="activeTab.set('customers')"
+      >
+        <span class="tab-label">Pelanggan (Customer)</span>
+        <span class="tab-badge">{{ customers().length }}</span>
+      </button>
+    </div>
+
+    <div class="search-box">
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (input)="onSearch()"
+        placeholder="Cari nama, email, nomor HP..."
+        class="search-input"
+      />
+    </div>
+  </div>
+
+  <!-- Tab Content: Suppliers -->
+  @if (activeTab() === 'suppliers') {
+    <div class="card-table-section">
+      @if (loading()) {
+        <div class="empty-state">
+          <p>Memuat data supplier...</p>
+        </div>
+      } @else if (suppliers().length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon">🏭</div>
+          <h3>Belum Ada Supplier</h3>
+          <p>Daftarkan rekan pemasok Anda agar mempermudah alur pengadaan barang (PO).</p>
+          <button class="btn btn-primary" (click)="openAddModal()">+ Tambah Supplier Baru</button>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="app-table">
+            <thead>
+              <tr>
+                <th style="width: 60px;">No</th>
+                <th>Nama Supplier</th>
+                <th>Nomor Telepon</th>
+                <th>Email</th>
+                <th>Terdaftar Sejak</th>
+                <th style="width: 140px; text-align: center;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (sup of suppliers(); track sup.id; let idx = $index) {
+                <tr>
+                  <td>{{ idx + 1 }}</td>
+                  <td class="font-medium text-dark">{{ sup.name }}</td>
+                  <td>{{ sup.phone || '-' }}</td>
+                  <td>{{ sup.email || '-' }}</td>
+                  <td>{{ sup.created_at | date:'dd MMM yyyy' }}</td>
+                  <td class="cell-actions">
+                    <button class="btn-icon-action edit" (click)="openEditSupplier(sup)" title="Edit">
+                      ✎
+                    </button>
+                    <button class="btn-icon-action delete" (click)="confirmDeleteSupplier(sup)" title="Hapus">
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Tab Content: Customers -->
+  @if (activeTab() === 'customers') {
+    <div class="card-table-section">
+      @if (loading()) {
+        <div class="empty-state">
+          <p>Memuat data pelanggan...</p>
+        </div>
+      } @else if (customers().length === 0) {
+        <div class="empty-state">
+          <div class="empty-icon">👥</div>
+          <h3>Belum Ada Pelanggan</h3>
+          <p>Daftarkan pelanggan atau klien untuk mempermudah pencatatan sales order & transaksi penjualan.</p>
+          <button class="btn btn-primary" (click)="openAddModal()">+ Tambah Pelanggan Baru</button>
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="app-table">
+            <thead>
+              <tr>
+                <th style="width: 60px;">No</th>
+                <th>Nama Pelanggan</th>
+                <th>Nomor Telepon</th>
+                <th>Email</th>
+                <th>Terdaftar Sejak</th>
+                <th style="width: 140px; text-align: center;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (cust of customers(); track cust.id; let idx = $index) {
+                <tr>
+                  <td>{{ idx + 1 }}</td>
+                  <td class="font-medium text-dark">{{ cust.name }}</td>
+                  <td>{{ cust.phone || '-' }}</td>
+                  <td>{{ cust.email || '-' }}</td>
+                  <td>{{ cust.created_at | date:'dd MMM yyyy' }}</td>
+                  <td class="cell-actions">
+                    <button class="btn-icon-action edit" (click)="openEditCustomer(cust)" title="Edit">
+                      ✎
+                    </button>
+                    <button class="btn-icon-action delete" (click)="confirmDeleteCustomer(cust)" title="Hapus">
+                      ✕
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Modal Form Tambah / Edit -->
+  @if (showModal()) {
+    <div class="modal-backdrop">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>
+            {{ editingId ? 'Edit ' : 'Tambah ' }}
+            {{ activeTab() === 'suppliers' ? 'Supplier' : 'Pelanggan' }}
+          </h3>
+          <button class="btn-close" (click)="closeModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Nama Lengkap / Instansi <span class="required">*</span></label>
+            <input
+              type="text"
+              class="form-control"
+              [(ngModel)]="formModel.name"
+              placeholder="Contoh: PT Sumber Makmur atau Bpk. Rudi"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Nomor Telepon / WhatsApp</label>
+            <input
+              type="text"
+              class="form-control"
+              [(ngModel)]="formModel.phone"
+              placeholder="08123456789"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Alamat Email</label>
+            <input
+              type="email"
+              class="form-control"
+              [(ngModel)]="formModel.email"
+              placeholder="kontak@mitra.com"
+            />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" (click)="closeModal()" [disabled]="actionLoading()">
+            Batal
+          </button>
+          <button class="btn btn-primary" (click)="savePartner()" [disabled]="actionLoading()">
+            {{ actionLoading() ? 'Menyimpan...' : 'Simpan' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Confirm Delete Dialog -->
+  <app-confirm-dialog
+    [isOpen]="showConfirmDelete()"
+    [title]="'Hapus ' + (deleteTargetType === 'supplier' ? 'Supplier' : 'Pelanggan')"
+    [message]="'Apakah Anda yakin ingin menghapus ' + (deleteTargetType === 'supplier' ? 'supplier' : 'pelanggan') + ' &quot;' + deleteTargetName + '&quot;?'"
+    confirmText="Ya, Hapus"
+    cancelText="Batal"
+    [loading]="deleteLoading()"
+    (confirm)="executeDelete()"
+    (cancel)="showConfirmDelete.set(false)"
+  />
+</div>
