@@ -12,6 +12,8 @@ from app.database import get_db
 from app.dependencies import get_current_membership, get_current_user, require_owner
 from app.models.category import Category
 from app.models.product import Product
+from app.models.purchase_order import PurchaseOrder, PurchaseOrderItem
+from app.models.sales_order import SalesOrder, SalesOrderItem
 from app.models.stock_balance import StockBalance
 from app.models.stock_movement import StockMovement
 from app.models.unit import Unit
@@ -598,20 +600,51 @@ def deactivate_product(
             detail="Produk tidak ditemukan",
         )
 
-    # Check if product has stock movements
-    has_movements = db.execute(
-        select(StockMovement)
-        .where(StockMovement.product_id == product_id)
-        .limit(1)
-    ).scalar_one_or_none()
+    org_id = membership.organization_id
 
-    if has_movements is not None:
-        # Product has been used in transactions, deactivate instead of delete
+    used = (
+        db.execute(
+            select(StockMovement.id)
+            .where(
+                StockMovement.organization_id == org_id,
+                StockMovement.product_id == product_id,
+            )
+            .limit(1)
+        ).first()
+        or db.execute(
+            select(StockBalance.id)
+            .where(
+                StockBalance.organization_id == org_id,
+                StockBalance.product_id == product_id,
+            )
+            .limit(1)
+        ).first()
+        or db.execute(
+            select(PurchaseOrderItem.id)
+            .join(PurchaseOrder, PurchaseOrder.id == PurchaseOrderItem.purchase_order_id)
+            .where(
+                PurchaseOrder.organization_id == org_id,
+                PurchaseOrderItem.product_id == product_id,
+            )
+            .limit(1)
+        ).first()
+        or db.execute(
+            select(SalesOrderItem.id)
+            .join(SalesOrder, SalesOrder.id == SalesOrderItem.sales_order_id)
+            .where(
+                SalesOrder.organization_id == org_id,
+                SalesOrderItem.product_id == product_id,
+            )
+            .limit(1)
+        ).first()
+    )
+
+    if used is not None:
+        # Produk sudah dipakai transaksi: nonaktifkan, jangan dihapus (aturan B MVP)
         product.is_active = False
         db.commit()
         return {"message": "Produk dinonaktifkan", "product_id": product_id}
 
-    # No transactions, can be hard deleted
     db.delete(product)
     db.commit()
     return {"message": "Produk dihapus", "product_id": product_id}

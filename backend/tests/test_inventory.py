@@ -22,11 +22,15 @@ from sqlalchemy.pool import StaticPool
 from app.database import Base, get_db
 from app.main import app
 from app.models.category import Category
+from app.models.customer import Customer
 from app.models.membership import Membership
 from app.models.organization import Organization
 from app.models.product import Product
+from app.models.purchase_order import PurchaseOrder, PurchaseOrderItem
+from app.models.sales_order import SalesOrder, SalesOrderItem
 from app.models.stock_balance import StockBalance
 from app.models.stock_movement import StockMovement
+from app.models.supplier import Supplier
 from app.models.unit import Unit
 from app.models.user import User
 from app.models.warehouse import Warehouse
@@ -56,6 +60,12 @@ def session_factory():
             Warehouse.__table__,
             StockBalance.__table__,
             StockMovement.__table__,
+            Supplier.__table__,
+            Customer.__table__,
+            PurchaseOrder.__table__,
+            PurchaseOrderItem.__table__,
+            SalesOrder.__table__,
+            SalesOrderItem.__table__,
         ],
     )
     factory = sessionmaker(bind=engine, autoflush=False, autocommit=False)
@@ -365,6 +375,28 @@ class TestProductCRUD:
         response = client.post("/inventory/deactivate-product?product_id=1", headers=_auth_headers(token))
         assert response.status_code == 200
         assert "dinonaktifkan" in response.json()["message"]
+
+    def test_deactivate_product_referenced_by_draft_po_is_deactivated_not_deleted(self, client, session_factory):
+        token, db_factory = _full_setup(client, session_factory)
+        headers = _auth_headers(token)
+
+        unit_id = client.post("/units", json={"name": "Pcs", "symbol": "pcs"}, headers=headers).json()["id"]
+        prod_id = client.post("/products", json={
+            "sku": "P-DRAFT", "name": "Produk Draft", "unit_id": unit_id,
+            "cost_price": 1000, "selling_price": 2000, "min_stock": 0,
+        }, headers=headers).json()["id"]
+
+        sup_id = client.post("/suppliers", json={"name": "PT Delta"}, headers=headers).json()["id"]
+        client.post("/purchases", headers=headers, json={
+            "supplier_id": sup_id,
+            "items": [{"product_id": prod_id, "quantity": 5, "unit_cost": 50000}],
+        })
+
+        res = client.post(f"/inventory/deactivate-product?product_id={prod_id}", headers=headers)
+        assert res.status_code == 200
+        assert res.json()["message"] == "Produk dinonaktifkan"
+        detail = client.get(f"/products/{prod_id}", headers=headers).json()
+        assert detail["is_active"] is False
 
 
 # =============================================================================
