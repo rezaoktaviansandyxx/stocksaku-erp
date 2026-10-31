@@ -7,7 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.routers import auth, debug, inventory, organizations
+from app.routers import auth, debug, inventory, organizations, partners, purchases
 
 load_dotenv()
 
@@ -34,6 +34,8 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(organizations.router)
 app.include_router(inventory.router)
+app.include_router(partners.router)
+app.include_router(purchases.router)
 app.include_router(debug.router)
 
 
