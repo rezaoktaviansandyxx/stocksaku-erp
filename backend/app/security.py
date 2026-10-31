@@ -1,17 +1,15 @@
+from datetime import datetime, timedelta, timezone
 import hashlib
 import hmac
 import secrets
+from typing import Any
+
+import jwt
+
+from app.config import settings
 
 PBKDF2_ALGORITHM = "pbkdf2_sha256"
 PBKDF2_ITERATIONS = 600_000
-
-
-def generate_session_token() -> str:
-    return secrets.token_urlsafe(32)
-
-
-def hash_session_token(token: str) -> str:
-    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 def hash_password(password: str) -> str:
@@ -31,3 +29,19 @@ def verify_password(password: str, password_hash: str) -> bool:
         "sha256", password.encode("utf-8"), bytes.fromhex(salt_hex), int(iterations)
     )
     return hmac.compare_digest(digest.hex(), digest_hex)
+
+
+def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> tuple[str, datetime]:
+    to_encode = data.copy()
+    now = datetime.now(timezone.utc)
+    if expires_delta:
+        expire = now + expires_delta
+    else:
+        expire = now + timedelta(minutes=settings.jwt_access_token_expire_minutes)
+    to_encode.update({"exp": expire, "iat": now})
+    encoded_jwt = jwt.encode(to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
+    return encoded_jwt, expire
+
+
+def decode_access_token(token: str) -> dict[str, Any]:
+    return jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])

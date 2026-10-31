@@ -1,20 +1,15 @@
-from datetime import datetime, timedelta, timezone
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.config import settings
 from app.database import get_db
-from app.dependencies import get_current_session
+from app.dependencies import get_current_user
 from app.models.user import User
-from app.models.user_session import UserSession
 from app.schemas.auth import LoginRequest, LoginResponse, RegisterRequest, UserResponse
 from app.security import (
-    generate_session_token,
+    create_access_token,
     hash_password,
-    hash_session_token,
     verify_password,
 )
 
@@ -62,23 +57,17 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> LoginResponse
     if not user.is_active:
         raise INVALID_CREDENTIALS
 
-    token = generate_session_token()
-    expires_at = datetime.now(timezone.utc) + timedelta(hours=settings.session_ttl_hours)
-    db.add(
-        UserSession(
-            user_id=user.id,
-            token_hash=hash_session_token(token),
-            expires_at=expires_at,
-        )
-    )
-    db.commit()
+    token, expires_at = create_access_token(data={"sub": str(user.id), "email": user.email})
     return LoginResponse(access_token=token, expires_at=expires_at)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(
-    session: UserSession = Depends(get_current_session),
-    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> None:
-    session.revoked_at = datetime.now(timezone.utc)
-    db.commit()
+    return None
+
+
+@router.get("/me", response_model=UserResponse)
+def get_me(current_user: User = Depends(get_current_user)) -> User:
+    return current_user

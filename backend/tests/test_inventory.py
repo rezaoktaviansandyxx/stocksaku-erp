@@ -28,7 +28,6 @@ from app.models.stock_balance import StockBalance
 from app.models.stock_movement import StockMovement
 from app.models.unit import Unit
 from app.models.user import User
-from app.models.user_session import UserSession
 from app.models.warehouse import Warehouse
 
 
@@ -47,7 +46,6 @@ def session_factory():
         engine,
         tables=[
             User.__table__,
-            UserSession.__table__,
             Organization.__table__,
             Membership.__table__,
             Category.__table__,

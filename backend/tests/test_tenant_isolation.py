@@ -9,7 +9,6 @@ from app.main import app
 from app.models.membership import Membership
 from app.models.organization import Organization
 from app.models.user import User
-from app.models.user_session import UserSession
 
 
 @pytest.fixture()
@@ -21,7 +20,7 @@ def session_factory():
     )
     Base.metadata.create_all(
         engine,
-        tables=[User.__table__, UserSession.__table__, Organization.__table__, Membership.__table__],
+        tables=[User.__table__, Organization.__table__, Membership.__table__],
     )
     factory = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     yield factory

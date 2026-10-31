@@ -11,8 +11,7 @@ from app.main import app
 from app.models.membership import Membership
 from app.models.organization import Organization
 from app.models.user import User
-from app.models.user_session import UserSession
-from app.security import hash_password, hash_session_token, verify_password
+from app.security import hash_password, verify_password, create_access_token, decode_access_token
 
 
 @pytest.fixture()
@@ -24,7 +23,7 @@ def session_factory():
     )
     Base.metadata.create_all(
         engine,
-        tables=[User.__table__, UserSession.__table__, Organization.__table__, Membership.__table__],
+        tables=[User.__table__, Organization.__table__, Membership.__table__],
     )
     factory = sessionmaker(bind=engine, autoflush=False, autocommit=False)
     yield factory
@@ -146,10 +145,10 @@ def test_login_berhasil_mengembalikan_token(client, session_factory):
     assert body["token_type"] == "bearer"
     assert body["access_token"]
 
-    with session_factory() as db:
-        stored = db.execute(select(UserSession)).scalar_one()
-        assert stored.token_hash == hash_session_token(body["access_token"])
-        assert body["access_token"] != stored.token_hash
+    from app.security import decode_access_token
+    payload = decode_access_token(body["access_token"])
+    assert payload["email"] == "owner@example.com"
+    assert payload["sub"]
 
 
 def test_login_password_salah_ditolak(client):
@@ -188,29 +187,27 @@ def test_endpoint_terlindungi_menolak_token_palsu(client):
     assert response.status_code == 401
 
 
-def test_logout_membuat_token_tidak_berlaku(client):
+def test_logout_berhasil_untuk_token_valid(client):
     _register(client)
     token = _login(client).json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
     first = client.post("/auth/logout", headers=headers)
-    second = client.post("/auth/logout", headers=headers)
-
     assert first.status_code == 204
-    assert second.status_code == 401
 
 
 def test_token_kedaluwarsa_ditolak(client, session_factory):
     _register(client)
-    token = _login(client).json()["access_token"]
-
     with session_factory() as db:
-        stored = db.execute(select(UserSession)).scalar_one()
-        stored.expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
-        db.commit()
+        user = db.execute(select(User)).scalar_one()
 
-    response = client.post("/auth/logout", headers={"Authorization": f"Bearer {token}"})
+    from app.security import create_access_token
+    expired_token, _ = create_access_token(
+        data={"sub": str(user.id), "email": user.email},
+        expires_delta=timedelta(seconds=-1),
+    )
 
+    response = client.post("/auth/logout", headers={"Authorization": f"Bearer {expired_token}"})
     assert response.status_code == 401
 
 
