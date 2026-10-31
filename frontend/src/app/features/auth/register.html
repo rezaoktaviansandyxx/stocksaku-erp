@@ -1,43 +1,62 @@
 <div class="auth-container">
-  <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="auth-form">
-    <h2>Daftar ke StokSaku ERP</h2>
+  <div class="auth-card">
+    <div class="auth-header">
+      <img src="logo.png" alt="StokSaku ERP" class="brand-logo" />
+      <h2>Daftar ke StokSaku ERP</h2>
+      <p class="subtitle">Buat akun untuk mengelola stok bisnis Anda</p>
+    </div>
 
-    <p *ngIf="error()" class="error">{{ error() }}</p>
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="auth-form">
+      <div *ngIf="error()" class="alert-error">
+        <span>⚠️</span>
+        <span>{{ error() }}</span>
+      </div>
 
-    <label>
-      Nama Lengkap
-      <input type="text" formControlName="full_name" placeholder="John Doe" />
-      <small *ngIf="f.full_name.invalid && f.full_name.touched">Nama diperlukan</small>
-    </label>
+      <div class="form-group">
+        <label for="fullName">Nama Lengkap</label>
+        <input
+          id="fullName"
+          type="text"
+          formControlName="full_name"
+          placeholder="Contoh: Budi Santoso"
+          autocomplete="name"
+        />
+        <small class="error-hint" *ngIf="f.full_name.invalid && f.full_name.touched">Nama diperlukan</small>
+      </div>
 
-    <label>
-      Email
-      <input
-        type="email"
-        formControlName="email"
-        placeholder="email@example.com"
-      />
-      <small *ngIf="f.email.invalid && f.email.touched">Isi email yang valid</small>
-    </label>
+      <div class="form-group">
+        <label for="regEmail">Email</label>
+        <input
+          id="regEmail"
+          type="email"
+          formControlName="email"
+          placeholder="nama@email.com"
+          autocomplete="email"
+        />
+        <small class="error-hint" *ngIf="f.email.invalid && f.email.touched">Isi email yang valid</small>
+      </div>
 
-    <label>
-      Password
-      <input
-        type="password"
-        formControlName="password"
-        placeholder="Minimal 8 karakter"
-      />
-      <small *ngIf="f.password.invalid && f.password.touched">
-        Password minimal 8 karakter
-      </small>
-    </label>
+      <div class="form-group">
+        <label for="regPassword">Password</label>
+        <input
+          id="regPassword"
+          type="password"
+          formControlName="password"
+          placeholder="Minimal 8 karakter"
+          autocomplete="new-password"
+        />
+        <small class="error-hint" *ngIf="f.password.invalid && f.password.touched">
+          Password minimal 8 karakter
+        </small>
+      </div>
 
-    <button type="submit" [disabled]="registerForm.invalid || loading()">
-      {{ loading() ? 'Memproses...' : 'Daftar' }}
-    </button>
+      <button type="submit" class="submit-btn" [disabled]="registerForm.invalid || loading()">
+        {{ loading() ? 'Memproses...' : 'Daftar' }}
+      </button>
 
-    <p class="switch-link">
-      Sudah punya akun? <a routerLink="/login">Masuk</a>
-    </p>
-  </form>
+      <p class="switch-link">
+        Sudah punya akun? <a routerLink="/login">Masuk ke akun</a>
+      </p>
+    </form>
+  </div>
 </div>

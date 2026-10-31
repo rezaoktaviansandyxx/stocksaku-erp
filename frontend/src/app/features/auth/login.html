@@ -1,37 +1,50 @@
 <div class="auth-container">
-  <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-form">
-    <h2>Masuk ke StokSaku ERP</h2>
+  <div class="auth-card">
+    <div class="auth-header">
+      <img src="logo.png" alt="StokSaku ERP" class="brand-logo" />
+      <h2>Masuk ke StokSaku ERP</h2>
+      <p class="subtitle">Kelola stok dan inventaris bisnis Anda dengan mudah</p>
+    </div>
 
-    <p *ngIf="error()" class="error">{{ error() }}</p>
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="auth-form">
+      <div *ngIf="error()" class="alert-error">
+        <span>⚠️</span>
+        <span>{{ error() }}</span>
+      </div>
 
-    <label>
-      Email
-      <input
-        type="email"
-        formControlName="email"
-        placeholder="email@example.com"
-      />
-      <small *ngIf="f.email.invalid && f.email.touched">Isi email yang valid</small>
-    </label>
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          placeholder="nama@email.com"
+          autocomplete="email"
+        />
+        <small class="error-hint" *ngIf="f.email.invalid && f.email.touched">Isi email yang valid</small>
+      </div>
 
-    <label>
-      Password
-      <input
-        type="password"
-        formControlName="password"
-        placeholder="Minimal 8 karakter"
-      />
-      <small *ngIf="f.password.invalid && f.password.touched">
-        Password minimal 8 karakter
-      </small>
-    </label>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          placeholder="Minimal 8 karakter"
+          autocomplete="current-password"
+        />
+        <small class="error-hint" *ngIf="f.password.invalid && f.password.touched">
+          Password minimal 8 karakter
+        </small>
+      </div>
 
-    <button type="submit" [disabled]="loginForm.invalid || loading()">
-      {{ loading() ? 'Memproses...' : 'Masuk' }}
-    </button>
+      <button type="submit" class="submit-btn" [disabled]="loginForm.invalid || loading()">
+        {{ loading() ? 'Memproses...' : 'Masuk' }}
+      </button>
 
-    <p class="switch-link">
-      Belum punya akun? <a routerLink="/register">Daftar</a>
-    </p>
-  </form>
+      <p class="switch-link">
+        Belum punya akun? <a routerLink="/register">Daftar sekarang</a>
+      </p>
+    </form>
+  </div>
 </div>
