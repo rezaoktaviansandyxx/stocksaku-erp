@@ -4,6 +4,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import desc, func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from app.database import get_db
@@ -200,7 +201,18 @@ def create_sales_order(
         items=so_items,
     )
     db.add(so)
-    db.commit()
+    for attempt in range(3):
+        try:
+            db.commit()
+            break
+        except IntegrityError:
+            db.rollback()
+            if attempt == 2:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Gagal membuat nomor pesanan unik, silakan coba lagi",
+                )
+            so.order_number = _generate_so_number(db, membership.organization_id)
     db.refresh(so)
 
     return _format_so_response(so, db)

@@ -265,3 +265,16 @@ def test_purchase_order_tenant_isolation(client, session_factory):
     # Org 2 receive -> 404
     res = client.post(f"/purchases/{po_id}/receive", headers=headers2)
     assert res.status_code == 404
+
+
+def test_create_po_with_duplicate_explicit_number_conflict(client, session_factory):
+    headers, wh_id, prod_id, sup_id = _setup(client)
+    payload = {
+        "supplier_id": sup_id,
+        "order_number": "PO-20260101-0001",
+        "items": [{"product_id": prod_id, "quantity": 1, "unit_cost": 100}],
+    }
+    assert client.post("/purchases", headers=headers, json=payload).status_code == 201
+    res = client.post("/purchases", headers=headers, json=payload)
+    assert res.status_code == 400
+    assert "sudah ada" in res.json()["detail"]

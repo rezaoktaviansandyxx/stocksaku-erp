@@ -195,3 +195,17 @@ def test_sales_tenant_isolation(client):
     assert client.get(f"/sales/{so['id']}", headers=headers2).status_code == 404
     assert client.post(f"/sales/{so['id']}/confirm", json={}, headers=headers2).status_code == 404
     assert client.post(f"/sales/{so['id']}/cancel", headers=headers2).status_code == 404
+
+
+def test_create_so_with_duplicate_explicit_number_conflict(client):
+    headers, wh_id, prod_id, cust_id = _setup(client, initial_stock="5")
+    payload = {
+        "customer_id": cust_id,
+        "warehouse_id": wh_id,
+        "order_number": "SO-20260101-0001",
+        "items": [{"product_id": prod_id, "quantity": 1, "unit_price": 100}],
+    }
+    assert client.post("/sales", headers=headers, json=payload).status_code == 201
+    res = client.post("/sales", headers=headers, json=payload)
+    assert res.status_code == 400
+    assert "sudah ada" in res.json()["detail"]
