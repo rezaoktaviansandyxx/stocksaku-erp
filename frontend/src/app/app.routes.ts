@@ -79,6 +79,12 @@ export const routes: Routes = [
                 loadComponent: () =>
                     import('./features/purchases/purchases').then((m) => m.Purchases),
             },
+            {
+                path: 'sales',
+                title: 'Penjualan (SO) | StokSaku ERP',
+                loadComponent: () =>
+                    import('./features/sales/sales').then((m) => m.Sales),
+            },
         ],
     },
     {

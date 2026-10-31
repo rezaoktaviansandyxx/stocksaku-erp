@@ -1,11 +1,15 @@
 import { Component, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
+import { DashboardService } from '../../core/services/dashboard.service';
 import { InventoryService } from '../../core/services/inventory.service';
+import type { DashboardSummaryResponse } from '../../core/models/dashboard.model';
 import type { InventoryAlertResponse, ProductResponse } from '../../core/models/inventory.model';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
+  imports: [DecimalPipe],
   template: `
     <div class="dashboard">
       <div class="dashboard-header">
@@ -106,10 +110,67 @@ import type { InventoryAlertResponse, ProductResponse } from '../../core/models/
             </div>
           </div>
         }
+
+        @if (summary(); as s) {
+          <h2 class="section-title">Ringkasan Penjualan & Pengadaan</h2>
+          <div class="cards cards-wide">
+            <div class="card card-success">
+              <div class="card-icon-wrapper emerald">💰</div>
+              <div class="card-info">
+                <span class="label">Omzet Hari Ini</span>
+                <span class="value">Rp {{ s.sales_total_today | number:'1.0-0' }}</span>
+                <span class="trend neutral">Penjualan terkonfirmasi hari ini</span>
+              </div>
+            </div>
+            <div class="card card-success">
+              <div class="card-icon-wrapper emerald">📈</div>
+              <div class="card-info">
+                <span class="label">Omzet Bulan Ini</span>
+                <span class="value">Rp {{ s.sales_total_month | number:'1.0-0' }}</span>
+                <span class="trend neutral">Penjualan terkonfirmasi bulan ini</span>
+              </div>
+            </div>
+            <div class="card card-primary">
+              <div class="card-icon-wrapper purple">🛒</div>
+              <div class="card-info">
+                <span class="label">Belanja Pengadaan</span>
+                <span class="value">Rp {{ s.purchase_total_month | number:'1.0-0' }}</span>
+                <span class="trend neutral">Total PO bulan ini</span>
+              </div>
+            </div>
+            <div class="card card-warning">
+              <div class="card-icon-wrapper orange">🧾</div>
+              <div class="card-info">
+                <span class="label">Order Penjualan Aktif</span>
+                <span class="value">{{ s.active_sales_orders }}</span>
+                <span class="trend neutral">Draft menunggu konfirmasi</span>
+              </div>
+            </div>
+          </div>
+        }
       }
     </div>
   `,
   styles: [`
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--color-text);
+      margin-top: 0.5rem;
+    }
+
+    .cards.cards-wide {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    .card-icon-wrapper.emerald {
+      background: #d1fae5;
+    }
+
+    .card-icon-wrapper.purple {
+      background: #ede9fe;
+    }
+
     .dashboard {
       display: flex;
       flex-direction: column;
@@ -415,10 +476,12 @@ export class Dashboard {
 
   alerts = signal<InventoryAlertResponse | null>(null);
   products = signal<ProductResponse[]>([]);
+  summary = signal<DashboardSummaryResponse | null>(null);
 
   constructor(
     private auth: AuthService,
     private inventory: InventoryService,
+    private dashboard: DashboardService,
   ) {
     const orgSlug = this.auth.getActiveOrg();
     if (orgSlug) {
@@ -437,6 +500,11 @@ export class Dashboard {
     this.loading.set(true);
     this.error.set(null);
     const headers = this.auth.buildHeaders();
+
+    this.dashboard.getSummary(headers).subscribe({
+      next: (res) => this.summary.set(res),
+      error: () => this.summary.set(null),
+    });
 
     this.inventory.listProducts({}, headers).subscribe({
       next: (prods) => {

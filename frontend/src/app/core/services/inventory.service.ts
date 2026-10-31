@@ -162,4 +162,22 @@ export class InventoryService {
   getAlerts(headers?: Record<string, string>) {
     return this.api.get<InventoryAlertResponse>('/inventory/alerts', headers);
   }
+
+  // Exports
+  exportBalancesCsv(headers?: Record<string, string>) {
+    return this.api.getBlob('/inventory/export-csv', headers);
+  }
+
+  exportMovementsCsv(params: {
+    product_id?: number;
+    start_date?: string;
+    end_date?: string;
+  }, headers?: Record<string, string>) {
+    const qs = new URLSearchParams();
+    if (params.product_id !== undefined) qs.set('product_id', String(params.product_id));
+    if (params.start_date) qs.set('start_date', params.start_date);
+    if (params.end_date) qs.set('end_date', params.end_date);
+    const path = `/inventory/movements/export-csv${qs.toString() ? `?${qs.toString()}` : ''}`;
+    return this.api.getBlob(path, headers);
+  }
 }

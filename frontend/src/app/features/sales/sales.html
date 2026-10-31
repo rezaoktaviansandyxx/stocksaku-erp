@@ -1,0 +1,346 @@
+<div class="sales-page">
+  <div class="header-actions">
+    <div>
+      <h2 class="section-title">Pesanan Penjualan (Sales Orders)</h2>
+      <p class="section-subtitle">Kelola transaksi penjualan ke pelanggan. Stok berkurang saat penjualan dikonfirmasi.</p>
+    </div>
+    <button class="btn btn-primary" (click)="openCreateModal()">
+      <span>➕ Buat Penjualan Baru</span>
+    </button>
+  </div>
+
+  @if (successMessage()) {
+    <div class="toast-success">
+      <span>{{ successMessage() }}</span>
+    </div>
+  }
+
+  @if (errorMessage()) {
+    <div class="toast-error">
+      <span>{{ errorMessage() }}</span>
+    </div>
+  }
+
+  <div class="filters-card">
+    <div class="filters-grid">
+      <div class="form-group">
+        <label>Filter Status</label>
+        <select [(ngModel)]="selectedStatus" (change)="loadData()">
+          <option value="">Semua Status</option>
+          <option value="Draft">Draft</option>
+          <option value="Confirmed">Dikonfirmasi</option>
+          <option value="Cancelled">Dibatalkan</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    @if (loading()) {
+      <div class="state-container">
+        <div class="spinner"></div>
+        <p>Memuat data pesanan penjualan...</p>
+      </div>
+    } @else if (sales().length === 0) {
+      <div class="state-container empty-state">
+        <span class="empty-icon">🧾</span>
+        <h3>Belum ada pesanan penjualan</h3>
+        <p>Buat pesanan penjualan pertama Anda untuk mencatat transaksi ke pelanggan.</p>
+        <button class="btn btn-outline" (click)="openCreateModal()">Buat Penjualan</button>
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>No. Pesanan</th>
+              <th>Tanggal</th>
+              <th>Pelanggan</th>
+              <th>Total Nominal</th>
+              <th>Status</th>
+              <th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (so of sales(); track so.id) {
+              <tr>
+                <td class="font-mono font-medium">{{ so.order_number }}</td>
+                <td>{{ formatDate(so.created_at) }}</td>
+                <td>{{ so.customer_name || 'Umum' }}</td>
+                <td class="font-semibold">{{ formatCurrency(so.total_amount) }}</td>
+                <td>
+                  <span class="badge"
+                    [class.badge-draft]="so.status === 'Draft'"
+                    [class.badge-confirmed]="so.status === 'Confirmed'"
+                    [class.badge-cancelled]="so.status === 'Cancelled'">
+                    {{ statusLabel(so.status) }}
+                  </span>
+                </td>
+                <td class="action-buttons">
+                  <button class="btn btn-sm btn-outline" (click)="viewDetail(so)">Detail</button>
+                  @if (so.status === 'Draft') {
+                    <button class="btn btn-sm btn-success" (click)="openConfirmModal(so)">Konfirmasi</button>
+                    <button class="btn btn-sm btn-danger-outline" (click)="openCancelModal(so)">Batalkan</button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <!-- Create SO Modal -->
+  @if (showCreateModal()) {
+    <div class="modal-backdrop" (click)="closeCreateModal()">
+      <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Buat Pesanan Penjualan (SO)</h3>
+          <button class="btn-close" (click)="closeCreateModal()">✕</button>
+        </div>
+
+        <form (ngSubmit)="submitCreate()">
+          <div class="modal-body">
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>Pelanggan</label>
+                <select [(ngModel)]="newSo.customer_id" name="customer_id">
+                  <option [ngValue]="null">Umum (tanpa pelanggan)</option>
+                  @for (c of customers(); track c.id) {
+                    <option [ngValue]="c.id">{{ c.name }}</option>
+                  }
+                </select>
+              </div>
+
+              <div class="form-group flex-1">
+                <label>Gudang Sumber <span class="required">*</span></label>
+                <select [(ngModel)]="newSo.warehouse_id" name="warehouse_id" (change)="onWarehouseChanged()" required>
+                  @for (w of warehouses(); track w.id) {
+                    <option [ngValue]="w.id">{{ w.name }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Catatan</label>
+              <input type="text" [(ngModel)]="newSo.notes" name="notes" placeholder="Catatan opsional..." />
+            </div>
+
+            <div class="items-section">
+              <div class="items-header">
+                <h4>Daftar Barang</h4>
+                <button type="button" class="btn btn-sm btn-outline" (click)="addItemRow()">+ Tambah Baris</button>
+              </div>
+
+              <table class="items-table">
+                <thead>
+                  <tr>
+                    <th style="width: 35%;">Produk <span class="required">*</span></th>
+                    <th style="width: 15%;">Stok Tersedia</th>
+                    <th style="width: 15%;">Jumlah <span class="required">*</span></th>
+                    <th style="width: 20%;">Harga Jual Satuan <span class="required">*</span></th>
+                    <th style="width: 10%;">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of soItemRows; track $index) {
+                    <tr>
+                      <td>
+                        <select [(ngModel)]="row.product_id" [name]="'product_' + $index" (change)="onProductSelected(row)" required>
+                          <option [ngValue]="null" disabled>Pilih Produk</option>
+                          @for (p of products(); track p.id) {
+                            <option [ngValue]="p.id">{{ p.name }} ({{ p.sku }})</option>
+                          }
+                        </select>
+                      </td>
+                      <td class="stock-cell">
+                        @if (row.available === null) {
+                          <span class="muted">-</span>
+                        } @else {
+                          <span [class.stock-low]="isOverStock(row)">{{ row.available }}</span>
+                        }
+                      </td>
+                      <td>
+                        <input type="number" step="any" min="0.001" [(ngModel)]="row.quantity" [name]="'qty_' + $index" required />
+                        @if (isOverStock(row)) {
+                          <small class="stock-warning">Melebihi stok</small>
+                        }
+                      </td>
+                      <td>
+                        <input type="number" step="100" min="0" [(ngModel)]="row.unit_price" [name]="'price_' + $index" required />
+                      </td>
+                      <td>
+                        @if (soItemRows.length > 1) {
+                          <button type="button" class="btn-delete-row" (click)="removeItemRow($index)">🗑️</button>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+
+              <div class="order-total-summary">
+                <span>Total Estimasi:</span>
+                <span class="total-amount">{{ formatCurrency(calculateTotal()) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" (click)="closeCreateModal()">Batal</button>
+            <button type="submit" class="btn btn-primary" [disabled]="submitting()">
+              {{ submitting() ? 'Menyimpan...' : 'Simpan Draft' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Detail Modal -->
+  @if (selectedSo()) {
+    <div class="modal-backdrop" (click)="closeDetailModal()">
+      <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div>
+            <h3>Detail SO: {{ selectedSo()?.order_number }}</h3>
+            <span class="badge"
+              [class.badge-draft]="selectedSo()?.status === 'Draft'"
+              [class.badge-confirmed]="selectedSo()?.status === 'Confirmed'"
+              [class.badge-cancelled]="selectedSo()?.status === 'Cancelled'">
+              {{ statusLabel(selectedSo()!.status) }}
+            </span>
+          </div>
+          <button class="btn-close" (click)="closeDetailModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <div class="po-meta-grid">
+            <div>
+              <strong>Pelanggan:</strong>
+              <p>{{ selectedSo()?.customer_name || 'Umum' }}</p>
+            </div>
+            <div>
+              <strong>Gudang Sumber:</strong>
+              <p>{{ selectedSo()?.warehouse_name || '-' }}</p>
+            </div>
+            <div>
+              <strong>Tanggal Dibuat:</strong>
+              <p>{{ formatDate(selectedSo()?.created_at) }}</p>
+            </div>
+            @if (selectedSo()?.confirmed_at) {
+              <div>
+                <strong>Tanggal Dikonfirmasi:</strong>
+                <p>{{ formatDate(selectedSo()?.confirmed_at) }}</p>
+              </div>
+            }
+          </div>
+
+          <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Daftar Barang</h4>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Produk</th>
+                <th>SKU</th>
+                <th>Qty</th>
+                <th>Harga Satuan</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (it of selectedSo()?.items; track it.id) {
+                <tr>
+                  <td>{{ it.product_name || '-' }}</td>
+                  <td class="font-mono">{{ it.product_sku || '-' }}</td>
+                  <td>{{ it.quantity }}</td>
+                  <td>{{ formatCurrency(it.unit_price) }}</td>
+                  <td class="font-semibold">{{ formatCurrency(it.subtotal) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+
+          <div class="order-total-summary">
+            <span>Total:</span>
+            <span class="total-amount">{{ formatCurrency(selectedSo()?.total_amount || 0) }}</span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-outline" (click)="closeDetailModal()">Tutup</button>
+          @if (selectedSo()?.status === 'Draft') {
+            <button class="btn btn-danger-outline" (click)="openCancelModal(selectedSo()!)">Batalkan</button>
+            <button class="btn btn-success" (click)="openConfirmModal(selectedSo()!)">Konfirmasi Penjualan</button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Confirm Modal -->
+  @if (soToConfirm()) {
+    <div class="modal-backdrop" (click)="closeConfirmModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Konfirmasi Penjualan</h3>
+          <button class="btn-close" (click)="closeConfirmModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <p>
+            Konfirmasi <strong>{{ soToConfirm()?.order_number }}</strong>? Stok produk akan dikurangi dari gudang yang dipilih.
+          </p>
+          <div class="alert-info">
+            Konfirmasi gagal jika stok di gudang tidak mencukupi. Pesanan tidak dapat dibatalkan setelah dikonfirmasi.
+          </div>
+
+          <div class="form-group" style="margin-top: 1rem;">
+            <label>Gudang Sumber</label>
+            <select [(ngModel)]="confirmWarehouseId">
+              @for (w of warehouses(); track w.id) {
+                <option [ngValue]="w.id">{{ w.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Catatan</label>
+            <input type="text" [(ngModel)]="confirmNotes" placeholder="Catatan konfirmasi..." />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-outline" (click)="closeConfirmModal()">Batal</button>
+          <button class="btn btn-success" (click)="confirmSo()" [disabled]="submitting()">
+            {{ submitting() ? 'Memproses...' : 'Konfirmasi' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Cancel Confirmation -->
+  @if (soToCancel()) {
+    <div class="modal-backdrop" (click)="closeCancelModal()">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Batalkan Penjualan</h3>
+          <button class="btn-close" (click)="closeCancelModal()">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <p>Batalkan pesanan <strong>{{ soToCancel()?.order_number }}</strong>? Tindakan ini tidak dapat diurungkan.</p>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-outline" (click)="closeCancelModal()">Tutup</button>
+          <button class="btn btn-danger" (click)="confirmCancel()" [disabled]="submitting()">
+            {{ submitting() ? 'Memproses...' : 'Ya, Batalkan' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

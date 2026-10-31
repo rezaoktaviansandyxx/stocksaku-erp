@@ -27,6 +27,7 @@ export class Layout {
     { label: 'Gudang', path: '/warehouses', icon: '🏢', title: 'Kelola Gudang' },
     { label: 'Inventaris', path: '/inventory', icon: '📋', title: 'Inventaris' },
     { label: 'Pembelian (PO)', path: '/purchases', icon: '🛒', title: 'Pesanan Pembelian (PO)' },
+    { label: 'Penjualan (SO)', path: '/sales', icon: '🧾', title: 'Pesanan Penjualan (SO)' },
     { label: 'Mitra & Kontak', path: '/partners', icon: '👥', title: 'Kontak & Mitra Bisnis' },
   ];
 

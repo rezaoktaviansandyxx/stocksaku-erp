@@ -1,7 +1,9 @@
+import csv
+import io
 from decimal import Decimal
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -642,21 +644,15 @@ def list_stock_balances(
     return db.execute(query).scalars().all()
 
 
-@router.get("/inventory/movements", response_model=list[StockMovementResponse])
-def list_movements(
-    db: Session = Depends(get_db),
-    membership: object = Depends(get_current_membership),
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=100, ge=1, le=500),
-    product_id: Optional[int] = Query(default=None),
-    start_date: Optional[str] = Query(default=None, description="ISO date e.g. 2026-01-01"),
-    end_date: Optional[str] = Query(default=None, description="ISO date e.g. 2026-12-31"),
+def _movements_query(
+    org_id: int,
+    product_id: Optional[int],
+    start_date: Optional[str],
+    end_date: Optional[str],
 ):
     query = (
         select(StockMovement)
-        .where(StockMovement.organization_id == membership.organization_id)
-        .offset(skip)
-        .limit(limit)
+        .where(StockMovement.organization_id == org_id)
         .order_by(StockMovement.created_at.desc())
     )
 
@@ -667,7 +663,119 @@ def list_movements(
     if end_date:
         query = query.where(StockMovement.created_at <= end_date)
 
+    return query
+
+
+def _csv_response(filename: str, header: list[str], rows: list[list]) -> Response:
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(header)
+    writer.writerows(rows)
+    return Response(
+        content=buffer.getvalue().encode("utf-8-sig"),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/inventory/movements", response_model=list[StockMovementResponse])
+def list_movements(
+    db: Session = Depends(get_db),
+    membership: object = Depends(get_current_membership),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=100, ge=1, le=500),
+    product_id: Optional[int] = Query(default=None),
+    start_date: Optional[str] = Query(default=None, description="ISO date e.g. 2026-01-01"),
+    end_date: Optional[str] = Query(default=None, description="ISO date e.g. 2026-12-31"),
+):
+    query = _movements_query(
+        membership.organization_id, product_id, start_date, end_date
+    ).offset(skip).limit(limit)
+
     return db.execute(query).scalars().all()
+
+
+@router.get("/inventory/export-csv")
+def export_stock_balances_csv(
+    db: Session = Depends(get_db),
+    membership: object = Depends(get_current_membership),
+):
+    """Laporan saldo dan valuasi stok per gudang."""
+    results = db.execute(
+        select(StockBalance, Product, Warehouse)
+        .join(Product, Product.id == StockBalance.product_id)
+        .join(Warehouse, Warehouse.id == StockBalance.warehouse_id)
+        .where(StockBalance.organization_id == membership.organization_id)
+        .order_by(Product.name, Warehouse.name)
+    ).all()
+
+    rows = []
+    for balance, product, warehouse in results:
+        quantity = Decimal(str(balance.quantity))
+        cost_price = Decimal(str(product.cost_price))
+        rows.append([
+            product.sku,
+            product.name,
+            warehouse.name,
+            str(quantity),
+            str(cost_price),
+            str((quantity * cost_price).quantize(Decimal("0.01"))),
+        ])
+
+    return _csv_response(
+        "laporan-saldo-stok.csv",
+        ["SKU", "Nama Produk", "Gudang", "Saldo Stok", "Harga Pokok", "Nilai Persediaan"],
+        rows,
+    )
+
+
+@router.get("/inventory/movements/export-csv")
+def export_stock_movements_csv(
+    db: Session = Depends(get_db),
+    membership: object = Depends(get_current_membership),
+    product_id: Optional[int] = Query(default=None),
+    start_date: Optional[str] = Query(default=None, description="ISO date e.g. 2026-01-01"),
+    end_date: Optional[str] = Query(default=None, description="ISO date e.g. 2026-12-31"),
+):
+    """Riwayat mutasi stok dengan filter yang sama seperti daftar mutasi."""
+    movements = db.execute(
+        _movements_query(membership.organization_id, product_id, start_date, end_date)
+    ).scalars().all()
+
+    products = {
+        p.id: p
+        for p in db.execute(
+            select(Product).where(Product.organization_id == membership.organization_id)
+        ).scalars().all()
+    }
+    warehouses = {
+        w.id: w
+        for w in db.execute(
+            select(Warehouse).where(Warehouse.organization_id == membership.organization_id)
+        ).scalars().all()
+    }
+
+    rows = []
+    for m in movements:
+        product = products.get(m.product_id)
+        warehouse = warehouses.get(m.warehouse_id)
+        reference = f"{m.reference_type} #{m.reference_id}" if m.reference_type else ""
+        rows.append([
+            m.created_at.isoformat() if m.created_at else "",
+            product.sku if product else "",
+            product.name if product else "",
+            warehouse.name if warehouse else "",
+            m.movement_type,
+            str(m.quantity),
+            reference,
+            m.notes or "",
+        ])
+
+    return _csv_response(
+        "riwayat-mutasi-stok.csv",
+        ["Waktu", "SKU", "Nama Produk", "Gudang", "Tipe Mutasi", "Kuantitas", "Referensi", "Catatan"],
+        rows,
+    )
 
 
 @router.get("/inventory/alerts")

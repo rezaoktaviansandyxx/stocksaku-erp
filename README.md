@@ -33,12 +33,70 @@ Proyek ini dikembangkan sebagai portfolio pengembangan software sekaligus fondas
 - Dashboard dan laporan persediaan.
 - Pemisahan data antarorganisasi.
 
+## Setup Backend
+
+Prasyarat: Python 3.11+ dan PostgreSQL yang berjalan.
+
+```bash
+cd backend
+python -m venv .venv
+.venv\Scripts\activate     # Windows (Linux/macOS: source .venv/bin/activate)
+pip install -r requirements.txt
+```
+
+Buat file `.env` di folder `backend/`:
+
+```env
+DATABASE_URL=postgresql+psycopg://<user>:<password>@localhost:5432/stocksaku
+JWT_SECRET_KEY=ganti-dengan-secret-acak
+```
+
+Jalankan migrasi database lalu seed data demo:
+
+```bash
+python -m alembic upgrade head
+python scripts/seed_demo.py
+```
+
+Seed script bersifat idempotent — data hanya dibuat jika organisasi `toko-demo` belum ada.
+
+Jalankan server:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+API docs tersedia di `http://localhost:8000/docs`.
+
+## Akun Demo
+
+Setelah menjalankan seed script, gunakan akun berikut untuk mencoba aplikasi:
+
+| Peran | Email | Password | Slug Organisasi |
+|---|---|---|---|
+| Owner | `owner@demo.com` | `demo12345` | `toko-demo` |
+| Staff | `staff@demo.com` | `demo12345` | `toko-demo` |
+
+Data simulasi yang dibuat: 3 produk (beras, gula, minyak), 1 supplier, 1 customer, 1 gudang, 2 Purchase Orders (sudah diterima & menunggu barang), dan 2 Sales Orders (terkonfirmasi & draft).
+
+## Testing Backend
+
+```bash
+cd backend
+python -m pytest
+```
+
+Suite pengujian menggunakan SQLite in-memory dan mencakup: registrasi/login, CRUD produk, inventaris, CRUD partner, siklus hidup Purchase Order (termasuk penerimaan stok dan proteksi ganda), siklus hidup Sales Order (validasi stok, konfirmasi, pembatalan), dashboard & ekspor CSV, serta proteksi multi-tenant.
+
 ## Struktur Repository
 
 ```text
 stoksaku-erp/
 ├── frontend/
 ├── backend/
+│   ├── scripts/
+│   │   └── seed_demo.py
+│   └── tests/
 ├── docs/
 │   ├── product-brief.md
 │   ├── mvp-scope.md
@@ -52,7 +110,7 @@ Struktur akan berkembang secara bertahap sesuai kebutuhan implementasi.
 
 ## Status Pengembangan
 
-Proyek berada pada tahap fondasi dan perencanaan MVP. Fitur belum dianggap selesai sebelum implementasi, pengujian, dan dokumentasinya tersedia.
+MVP prioritas tinggi (P0) sudah selesai diimplementasikan: autentikasi, master data, inventaris, pembelian, penjualan, dashboard, ekspor laporan, dan pengujian otomatis. Status tiap fase tercatat di `PLAN.md`.
 
 ## Prinsip Pengembangan
 

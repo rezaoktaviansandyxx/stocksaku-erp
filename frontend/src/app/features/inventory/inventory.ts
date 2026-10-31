@@ -162,6 +162,42 @@ export class Inventory implements OnInit {
     this.fetchMovements();
   }
 
+  downloadBalancesCsv(): void {
+    const headers = this.auth.buildHeaders();
+    this.inventory.exportBalancesCsv(headers).subscribe({
+      next: (blob) => this.saveBlob(blob, `laporan-saldo-stok-${this.timestamp()}.csv`),
+      error: () => this.error.set('Gagal mengunduh laporan saldo stok'),
+    });
+  }
+
+  downloadMovementsCsv(): void {
+    const headers = this.auth.buildHeaders();
+    const params: Record<string, unknown> = {};
+    if (this.movementProductId) params['product_id'] = this.movementProductId;
+    if (this.movementStartDate) params['start_date'] = this.movementStartDate;
+    if (this.movementEndDate) params['end_date'] = this.movementEndDate;
+
+    this.inventory.exportMovementsCsv(params as never, headers).subscribe({
+      next: (blob) => this.saveBlob(blob, `riwayat-mutasi-stok-${this.timestamp()}.csv`),
+      error: () => this.error.set('Gagal mengunduh riwayat mutasi'),
+    });
+  }
+
+  private timestamp(): string {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
+  }
+
+  private saveBlob(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   getProductName(id: number): string {
     return this.productMap.get(id)?.name ?? `Produk #${id}`;
   }
