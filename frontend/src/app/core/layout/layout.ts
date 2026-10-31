@@ -3,6 +3,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive, NavigationEnd, Router } fro
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
+import { ConfirmDialog } from '../../shared/components/confirm-dialog';
 
 interface NavItem {
   label: string;
@@ -14,7 +15,7 @@ interface NavItem {
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, ConfirmDialog],
   templateUrl: './layout.html',
   styleUrl: './layout.scss',
 })
@@ -22,10 +23,16 @@ export class Layout {
   navItems: NavItem[] = [
     { label: 'Beranda', path: '/dashboard', icon: '🏠', title: 'Beranda' },
     { label: 'Produk', path: '/products', icon: '📦', title: 'Produk' },
+    { label: 'Kategori & Satuan', path: '/products/categories-units', icon: '🏷️', title: 'Kategori & Satuan' },
+    { label: 'Gudang', path: '/warehouses', icon: '🏢', title: 'Kelola Gudang' },
     { label: 'Inventaris', path: '/inventory', icon: '📋', title: 'Inventaris' },
+    { label: 'Pembelian (PO)', path: '/purchases', icon: '🛒', title: 'Pesanan Pembelian (PO)' },
+    { label: 'Mitra & Kontak', path: '/partners', icon: '👥', title: 'Kontak & Mitra Bisnis' },
   ];
 
   mobileMenuOpen = signal(false);
+  showLogoutConfirm = signal(false);
+  logoutLoading = signal(false);
   pageTitle = signal('StokSaku ERP');
 
   constructor(
@@ -51,8 +58,19 @@ export class Layout {
     this.mobileMenuOpen.set(false);
   }
 
-  logout(): void {
+  openLogoutConfirm(): void {
+    this.showLogoutConfirm.set(true);
+  }
+
+  cancelLogout(): void {
+    this.showLogoutConfirm.set(false);
+  }
+
+  confirmLogout(): void {
+    this.logoutLoading.set(true);
     this.auth.logout();
+    this.showLogoutConfirm.set(false);
+    this.logoutLoading.set(false);
     this.closeMobileMenu();
     this.router.navigate(['/login']);
   }

@@ -1,1 +1,67 @@
 /* You can add global styles to this file, and also import other style files */
+
+/* Global Breakpoint & Theme Variables */
+:root {
+  /* Breakpoints */
+  --breakpoint-mobile: 576px;
+  --breakpoint-tablet: 768px;
+  --breakpoint-desktop: 1024px;
+
+  /* Sidebar widths */
+  --sidebar-width: 260px;
+  --sidebar-width-mini: 72px;
+
+  /* Spacing scale */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 0.75rem;
+  --spacing-lg: 1rem;
+  --spacing-xl: 1.25rem;
+  --spacing-2xl: 1.5rem;
+  --spacing-3xl: 2rem;
+
+  /* Colors */
+  --color-sidebar-bg: #1e293b;
+  --color-sidebar-hover: #334155;
+  --color-sidebar-active: #0ea5e9;
+  --color-sidebar-active-bg: rgba(14, 165, 233, 0.12);
+  --color-sidebar-text: #94a3b8;
+  --color-sidebar-text-active: #ffffff;
+  --color-sidebar-border: #334155;
+
+  --color-body-bg: #f8fafc;
+  --color-primary: #0284c7;
+  --color-primary-hover: #0369a1;
+  --color-danger: #ef4444;
+  --color-danger-hover: #dc2626;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+
+  --color-text: #0f172a;
+  --color-text-muted: #64748b;
+  --color-border: #e2e8f0;
+  --color-border-dark: #cbd5e1;
+  --color-card-bg: #ffffff;
+  --color-header-bg: #ffffff;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-body-bg);
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Dark mode support variable detection */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-border: #334155;
+    --color-border-dark: #475569;
+  }
+}

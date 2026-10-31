@@ -1,0 +1,89 @@
+.org-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8fafc;
+  font-family: inherit;
+}
+
+.org-navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.org-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  .org-logo {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+  }
+
+  .org-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+  }
+}
+
+.org-nav-actions {
+  display: flex;
+  align-items: center;
+}
+
+.btn-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #ffffff;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  color: #ea580c;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  .logout-icon {
+    font-size: 1rem;
+  }
+
+  &:hover {
+    background: #fff7ed;
+    border-color: #f97316;
+    color: #c2410c;
+    box-shadow: 0 2px 6px rgba(234, 88, 12, 0.15);
+  }
+}
+
+.org-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+@media (max-width: 640px) {
+  .org-navbar {
+    padding: 0.75rem 1rem;
+  }
+
+  .logout-text {
+    display: none;
+  }
+
+  .btn-logout {
+    padding: 0.5rem;
+  }
+}

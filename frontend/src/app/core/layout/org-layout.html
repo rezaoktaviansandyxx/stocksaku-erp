@@ -1,0 +1,21 @@
+<div class="org-layout">
+  <!-- Minimalist Clean Header -->
+  <header class="org-navbar">
+    <div class="org-brand">
+      <img src="logo.png" alt="StokSaku Logo" class="org-logo" />
+      <span class="org-title">StokSaku ERP</span>
+    </div>
+
+    <div class="org-nav-actions">
+      <button class="btn-logout" (click)="logout()" title="Keluar dari akun">
+        <span class="logout-icon">🚪</span>
+        <span class="logout-text">Keluar</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Page Content (Org List / Create Org) -->
+  <main class="org-main">
+    <router-outlet />
+  </main>
+</div>

@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
-import { AuthGuard } from './core/guards/auth.guard';
+import { AuthGuard, OrgGuard } from './core/guards/auth.guard';
 import { Layout } from './core/layout/layout';
+import { OrgLayout } from './core/layout/org-layout';
 
 export const routes: Routes = [
     {
@@ -14,22 +15,29 @@ export const routes: Routes = [
         loadComponent: () => import('./features/auth/register').then((m) => m.Register),
     },
     {
-        path: '',
+        path: 'orgs',
         canActivate: [AuthGuard],
-        component: Layout,
+        component: OrgLayout,
         children: [
             {
-                path: 'orgs',
-                title: 'Organisasi | StokSaku ERP',
+                path: '',
+                title: 'Pilih Organisasi | StokSaku ERP',
                 loadComponent: () =>
                     import('./features/organizations/org-list').then((m) => m.OrgList),
             },
             {
-                path: 'orgs/create',
+                path: 'create',
                 title: 'Buat Organisasi | StokSaku ERP',
                 loadComponent: () =>
                     import('./features/organizations/org-create').then((m) => m.OrgCreate),
             },
+        ],
+    },
+    {
+        path: '',
+        canActivate: [OrgGuard],
+        component: Layout,
+        children: [
             {
                 path: 'dashboard',
                 title: 'Beranda | StokSaku ERP',
@@ -42,20 +50,44 @@ export const routes: Routes = [
                 loadComponent: () => import('./features/products/products').then((m) => m.Products),
             },
             {
+                path: 'products/categories-units',
+                title: 'Kategori & Satuan | StokSaku ERP',
+                loadComponent: () =>
+                    import('./features/products/categories-units').then((m) => m.CategoriesUnits),
+            },
+            {
                 path: 'inventory',
                 title: 'Inventaris | StokSaku ERP',
                 loadComponent: () =>
                     import('./features/inventory/inventory').then((m) => m.Inventory),
             },
+            {
+                path: 'warehouses',
+                title: 'Gudang | StokSaku ERP',
+                loadComponent: () =>
+                    import('./features/warehouses/warehouses').then((m) => m.Warehouses),
+            },
+            {
+                path: 'partners',
+                title: 'Kontak & Mitra | StokSaku ERP',
+                loadComponent: () =>
+                    import('./features/partners/partners').then((m) => m.Partners),
+            },
+            {
+                path: 'purchases',
+                title: 'Pembelian (PO) | StokSaku ERP',
+                loadComponent: () =>
+                    import('./features/purchases/purchases').then((m) => m.Purchases),
+            },
         ],
     },
     {
         path: '',
-        redirectTo: '/login',
+        redirectTo: '/dashboard',
         pathMatch: 'full',
     },
     {
         path: '**',
-        redirectTo: '/login',
+        redirectTo: '/dashboard',
     },
 ];

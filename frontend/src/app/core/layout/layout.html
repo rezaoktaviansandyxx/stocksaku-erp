@@ -1,6 +1,9 @@
 <div class="layout">
   <!-- Sidebar -->
-  <nav class="sidebar" [class.open]="mobileMenuOpen()">
+  <nav
+    class="sidebar"
+    [class.open]="mobileMenuOpen()"
+  >
     <div class="sidebar-header">
       <div class="logo-container">
         <img src="logo.png" alt="Logo StokSaku ERP" class="logo-img" />
@@ -23,19 +26,6 @@
         </li>
       }
     </ul>
-
-    <div class="sidebar-footer">
-      @if (auth.getActiveOrg()) {
-        <div class="org-info">
-          <span class="org-label">Organisasi:</span>
-          <span class="org-slug">{{ auth.getActiveOrg() }}</span>
-        </div>
-      }
-      <button class="logout-btn" (click)="logout()">
-        <span class="icon">🚪</span>
-        <span class="label">Keluar</span>
-      </button>
-    </div>
   </nav>
 
   <!-- Mobile overlay -->
@@ -49,19 +39,28 @@
   <div class="main-content">
     <!-- Header -->
     <header class="header">
-      <button class="menu-btn" (click)="toggleMobileMenu()">
+      <!-- Mobile & Tablet: Hamburger menu -->
+      <button class="menu-btn" (click)="toggleMobileMenu()" aria-label="Toggle menu">
         <span></span>
         <span></span>
         <span></span>
       </button>
-      <h2 class="page-title">{{ pageTitle() }}</h2>
+
+      <div class="header-titles">
+        <h2 class="page-title">{{ pageTitle() }}</h2>
+        <span class="page-breadcrumb">StokSaku ERP / {{ pageTitle() }}</span>
+      </div>
 
       <div class="header-actions">
         @if (auth.getActiveOrg()) {
-          <span class="org-slug-header">{{ auth.getActiveOrg() }}</span>
+          <div class="org-badge">
+            <span class="org-dot"></span>
+            <span class="org-slug-header">{{ auth.getActiveOrg() }}</span>
+          </div>
         }
-        <button class="logout-btn-header" (click)="logout()">
-          🚪 Keluar
+        <button class="logout-btn-header" (click)="openLogoutConfirm()" title="Keluar dari akun">
+          <span>🚪</span>
+          <span class="btn-text">Keluar</span>
         </button>
       </div>
     </header>
@@ -71,4 +70,17 @@
       <router-outlet />
     </main>
   </div>
+
+  <!-- Logout Confirmation Dialog -->
+  <app-confirm-dialog
+    [isOpen]="showLogoutConfirm()"
+    title="Konfirmasi Keluar"
+    message="Apakah Anda yakin ingin keluar dari sistem StokSaku ERP? Sesi login Anda akan diakhiri."
+    confirmText="Ya, Keluar"
+    cancelText="Batal"
+    variant="danger"
+    [loading]="logoutLoading()"
+    (confirmed)="confirmLogout()"
+    (cancelled)="cancelLogout()"
+  ></app-confirm-dialog>
 </div>
