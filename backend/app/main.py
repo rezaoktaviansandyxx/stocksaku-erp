@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.routers import auth, dashboard, debug, inventory, organizations, partners, purchases, sales
 
@@ -15,17 +16,19 @@ APP_NAME = os.getenv("APP_NAME", "StokSaku ERP")
 APP_ENV = os.getenv("APP_ENV", "development")
 API_VERSION = os.getenv("API_VERSION", "0.1.0")
 
+_allowed_origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
+if APP_ENV == "production" and settings.jwt_secret_key == "stocksaku-secret-key-change-in-production":
+    raise RuntimeError("JWT_SECRET_KEY wajib diisi pada environment production")
+
 app = FastAPI(
     title=APP_NAME,
     version=API_VERSION,
     description="Backend API untuk aplikasi StokSaku ERP.",
 )
 
-# CORS: izinkan frontend berkomunikasi dengan backend.
-# Di production, ganti origins=["*"] dengan daftar origin yang dipercaya.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # TODO(production): ganti dengan origin frontend spesifik
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
