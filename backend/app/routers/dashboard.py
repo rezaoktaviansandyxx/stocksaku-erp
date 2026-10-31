@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.dependencies import get_current_membership
 from app.models.membership import Membership
+from app.models.product import Product
 from app.models.purchase_order import PurchaseOrder
 from app.models.sales_order import SalesOrder
 from app.schemas.dashboard import DashboardSummaryResponse
@@ -50,7 +51,15 @@ def get_dashboard_summary(
         )
     ).scalar() or 0
 
+    active_products = db.execute(
+        select(func.count(Product.id)).where(
+            Product.organization_id == org_id,
+            Product.is_active.is_(True),
+        )
+    ).scalar() or 0
+
     return DashboardSummaryResponse(
+        active_products=active_products,
         sales_total_today=sales_total_since(today_start),
         sales_total_month=sales_total_since(month_start),
         purchase_total_month=Decimal(str(purchase_total_month or 0)),

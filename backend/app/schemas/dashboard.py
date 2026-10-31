@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 
 class DashboardSummaryResponse(BaseModel):
+    active_products: int
     sales_total_today: Decimal
     sales_total_month: Decimal
     purchase_total_month: Decimal

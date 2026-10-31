@@ -150,3 +150,26 @@ def test_movements_export_csv_respects_product_filter(client):
     assert len(lines) == 2
     assert "PROD-DASH-1" in lines[1]
     assert "PROD-DASH-2" not in res.content.decode("utf-8-sig")
+
+
+def test_summary_counts_active_products(client):
+    client.post("/auth/register", json={"email": "dash@example.com", "password": "rahasia123", "full_name": "D"})
+    res = client.post("/auth/login", json={"email": "dash@example.com", "password": "rahasia123"})
+    token = res.json()["access_token"]
+    client.post("/organizations", json={"name": "Toko Dash", "slug": "toko-dash"},
+                headers={"Authorization": f"Bearer {token}"})
+    headers = {"Authorization": f"Bearer {token}", "X-Organization-Slug": "toko-dash"}
+
+    unit_id = client.post("/units", json={"name": "Pcs", "symbol": "pcs"}, headers=headers).json()["id"]
+    p1 = client.post("/products", json={
+        "sku": "P-D", "name": "Produk Dash", "unit_id": unit_id,
+        "cost_price": 1000, "selling_price": 2000, "min_stock": 0,
+    }, headers=headers).json()
+
+    summary = client.get("/dashboard/summary", headers=headers).json()
+    assert summary["active_products"] >= 1
+
+    # nonaktifkan satu produk -> jumlah produk aktif berkurang tepat satu
+    client.patch(f"/products/{p1['id']}", headers=headers, json={"is_active": False})
+    summary2 = client.get("/dashboard/summary", headers=headers).json()
+    assert summary2["active_products"] == summary["active_products"] - 1
