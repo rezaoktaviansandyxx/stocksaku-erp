@@ -168,6 +168,7 @@ Kriteria selesai:
 
 - Prioritas: P0
 - Estimasi: 2 sesi
+- Status: **SELESAI** ✅
 
 Task:
 - Membuat schema request dan response.
@@ -185,6 +186,7 @@ Kriteria selesai:
 
 - Prioritas: P0
 - Estimasi: 2–3 sesi
+- Status: **SELESAI** ✅
 
 Task:
 - Membuat endpoint login.
@@ -219,6 +221,7 @@ Kriteria selesai:
 
 - Prioritas: P0
 - Estimasi: 2–3 sesi
+- Status: **SELESAI** ✅
 
 Task:
 - Membuat dependency untuk memeriksa autentikasi dan membership.
@@ -255,6 +258,7 @@ Kriteria selesai:
 
 - Prioritas: P0
 - Estimasi: 2–3 sesi
+- Status: **SELESAI** ✅
 
 Task:
 - Membuat endpoint tambah produk.
@@ -272,6 +276,7 @@ Kriteria selesai:
 
 - Prioritas: P0
 - Estimasi: 2 sesi
+- Status: **SELESAI** ✅
 
 Task:
 - Membuat proses pencatatan stok awal.
@@ -289,6 +294,7 @@ Kriteria selesai:
 
 - Prioritas: P0
 - Estimasi: 3 sesi
+- Status: **SELESAI** ✅
 
 Task:
 - Membuat layanan barang masuk.
@@ -308,6 +314,7 @@ Kriteria selesai:
 
 - Prioritas: P0
 - Estimasi: 2 sesi
+- Status: **SELESAI** ✅
 
 Task:
 - Membuat endpoint penyesuaian stok.
@@ -325,6 +332,7 @@ Kriteria selesai:
 
 - Prioritas: P0
 - Estimasi: 2 sesi
+- Status: **SELESAI** ✅
 
 Task:
 - Membuat endpoint riwayat mutasi.
@@ -458,6 +466,7 @@ Kriteria selesai:
 
 - Prioritas: P0
 - Estimasi: 3 sesi
+- Status: **SELESAI** ✅
 
 Task:
 - Menguji validasi produk.
@@ -507,7 +516,17 @@ Kriteria selesai:
 
 ---
 
-## 9. Urutan Pengerjaan
+## 9. Item Backlog Lanjutan (P1)
+
+Berikut item yang ditunda ke P1 setelah penutupan gap MVP 2026-10-31:
+
+1. **Normalisasi `movement_type`**: Menyelaraskan format kode mutasi stok (`inbound/outbound` vs `IN/OUT`) dan pelaporan audit mutasi komprehensif.
+2. **Pagination Server-side Frontend**: Menerapkan pagination server-side pada seluruh tabel master dan transaksi di Angular frontend.
+3. **UI Manajemen Role & Undangan Anggota**: Tampilan badge Owner/Staff, alur invite anggota melalui email, dan pengaturan hak akses granular pada antarmuka frontend.
+
+---
+
+## 10. Urutan Pengerjaan
 
 Urutan implementasi yang disarankan:
 
@@ -525,7 +544,7 @@ Urutan implementasi yang disarankan:
 
 Pembelian dan penjualan lengkap dikerjakan setelah inventory dasar stabil. Jangan membuat semua modul sekaligus.
 
-## 10. Definition of Done
+## 11. Definition of Done
 
 Sebuah task dianggap selesai jika:
 
@@ -537,7 +556,7 @@ Sebuah task dianggap selesai jika:
 - Perubahan sudah ditinjau dan di-commit.
 - Tidak merusak alur yang sebelumnya berfungsi.
 
-## 11. Task Pertama
+## 12. Task Pertama
 
 Mulai dari A-01:
 

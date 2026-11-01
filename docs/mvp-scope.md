@@ -190,16 +190,16 @@ MVP harus mendukung alur berikut:
 
 MVP dinyatakan selesai jika:
 
-- [ ] Pengguna dapat login dan mengakses organisasi yang benar.
-- [ ] Produk dapat dibuat, diedit, dicari, dan dinonaktifkan.
-- [ ] Stok awal dan mutasi dapat dicatat.
-- [ ] Pembelian yang diterima menambah stok dengan benar.
-- [ ] Penjualan yang dikonfirmasi mengurangi stok dengan benar.
-- [ ] Sistem mencegah transaksi yang diproses berulang kali.
-- [ ] Saldo stok sesuai dengan catatan mutasi.
-- [ ] Dashboard dan laporan menampilkan data aktual.
-- [ ] Akses lintas organisasi ditolak oleh backend.
-- [ ] Pengujian alur utama lulus.
+- [x] Pengguna dapat login dan mengakses organisasi yang benar.
+- [x] Produk dapat dibuat, diedit, dicari, dan dinonaktifkan.
+- [x] Stok awal dan mutasi dapat dicatat.
+- [x] Pembelian yang diterima menambah stok dengan benar.
+- [x] Penjualan yang dikonfirmasi mengurangi stok dengan benar.
+- [x] Sistem mencegah transaksi yang diproses berulang kali.
+- [x] Saldo stok sesuai dengan catatan mutasi.
+- [x] Dashboard dan laporan menampilkan data aktual.
+- [x] Akses lintas organisasi ditolak oleh backend.
+- [x] Pengujian alur utama lulus.
 - [ ] Aplikasi dapat dijalankan melalui URL demo.
 - [ ] Dokumentasi dan akun demo tersedia.
 
