@@ -218,6 +218,25 @@ export class Purchases implements OnInit {
     this.selectedPo.set(null);
   }
 
+  sendOrder(po: PurchaseOrderResponse): void {
+    this.submitting.set(true);
+    const headers = this.auth.buildHeaders();
+    this.purchaseService.sendPurchaseOrder(po.id, headers).subscribe({
+      next: (updatedPo) => {
+        this.submitting.set(false);
+        if (this.selectedPo()?.id === po.id) {
+          this.selectedPo.set(updatedPo);
+        }
+        this.showToast(`PO ${updatedPo.order_number} berhasil dikirim ke supplier.`);
+        this.loadData();
+      },
+      error: (err) => {
+        this.submitting.set(false);
+        alert(err.error?.detail || 'Gagal mengirim pesanan pembelian');
+      },
+    });
+  }
+
   openReceiveModal(po: PurchaseOrderResponse): void {
     this.poToReceive.set(po);
     this.receiveWarehouseId = po.warehouse_id || (this.warehouses().length > 0 ? this.warehouses()[0].id : null);

@@ -34,6 +34,10 @@ export class PurchaseService {
     return this.api.get<PurchaseOrderResponse>(`/purchases/${id}`, headers);
   }
 
+  sendPurchaseOrder(id: number, headers?: Record<string, string>) {
+    return this.api.post<PurchaseOrderResponse>(`/purchases/${id}/send`, null, headers);
+  }
+
   receivePurchaseOrder(id: number, payload?: PurchaseReceiveRequest, headers?: Record<string, string>) {
     return this.api.post<PurchaseOrderResponse>(`/purchases/${id}/receive`, payload || {}, headers);
   }

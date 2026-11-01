@@ -89,7 +89,10 @@
                 </td>
                 <td class="action-buttons">
                   <button class="btn btn-sm btn-outline" (click)="viewDetail(po)">Detail</button>
-                  @if (po.status !== 'Received') {
+                  @if (po.status === 'Draft') {
+                    <button class="btn btn-sm btn-primary" (click)="sendOrder(po)" [disabled]="submitting()">Kirim PO</button>
+                  }
+                  @if (po.status === 'Ordered') {
                     <button class="btn btn-sm btn-success" (click)="openReceiveModal(po)">Terima Barang</button>
                   }
                 </td>
@@ -270,7 +273,10 @@
 
         <div class="modal-footer">
           <button class="btn btn-outline" (click)="closeDetailModal()">Tutup</button>
-          @if (selectedPo()?.status !== 'Received') {
+          @if (selectedPo()?.status === 'Draft') {
+            <button class="btn btn-primary" (click)="sendOrder(selectedPo()!)" [disabled]="submitting()">Kirim PO</button>
+          }
+          @if (selectedPo()?.status === 'Ordered') {
             <button class="btn btn-success" (click)="openReceiveModal(selectedPo()!)">Terima Barang</button>
           }
         </div>
