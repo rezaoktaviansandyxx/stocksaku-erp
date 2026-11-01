@@ -40,9 +40,9 @@ import type { InventoryAlertResponse, ProductResponse } from '../../core/models/
           <div class="card card-primary">
             <div class="card-icon-wrapper blue">📦</div>
             <div class="card-info">
-              <span class="label">Total Produk</span>
-              <span class="value">{{ productCount() }}</span>
-              <span class="trend neutral">Terdaftar di sistem</span>
+              <span class="label">Produk Aktif</span>
+              <span class="value">{{ summary()?.active_products ?? 0 }}</span>
+              <span class="trend neutral">Aktif di sistem</span>
             </div>
           </div>
           <div class="card card-danger" [class.highlight]="zeroStockCount() > 0">
