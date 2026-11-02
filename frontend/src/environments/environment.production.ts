@@ -1,4 +1,4 @@
 export const environment = {
     production: true,
-    apiUrl: 'https://api-domain-kamu.example.com',
+    apiUrl: 'https://stocksaku-api.vercel.app',
 };
