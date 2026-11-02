@@ -1,20 +1,23 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { PurchaseService } from '../../core/services/purchase.service';
-import { SupplierService } from '../../core/services/supplier.service';
-import { InventoryService } from '../../core/services/inventory.service';
-import { AuthService } from '../../core/services/auth.service';
+import { PurchaseService } from '@core/services';
+import { SupplierService } from '@core/services';
+import { InventoryService } from '@core/services';
+import { AuthService } from '@core/services';
+import { ConfirmDialog } from '@shared/components';
+import { NumberFormatDirective } from '@shared/directives';
 import type {
   PurchaseOrderResponse,
   PurchaseOrderCreate,
   PurchaseOrderItemCreate,
-} from '../../core/models/purchase.model';
-import type { SupplierResponse } from '../../core/models/supplier.model';
-import type { ProductResponse, WarehouseResponse } from '../../core/models/inventory.model';
+} from '@core/models';
+import type { SupplierResponse } from '@core/models';
+import type { ProductResponse, WarehouseResponse } from '@core/models';
 
 interface ItemRow {
   product_id: number | null;
+  product_name: string;
   quantity: number;
   unit_cost: number;
 }
@@ -22,7 +25,7 @@ interface ItemRow {
 @Component({
   selector: 'app-purchases',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ConfirmDialog, NumberFormatDirective],
   templateUrl: './purchases.html',
   styleUrl: './purchases.scss',
 })
@@ -45,6 +48,19 @@ export class Purchases implements OnInit {
   showCreateModal = signal(false);
   selectedPo = signal<PurchaseOrderResponse | null>(null);
   poToReceive = signal<PurchaseOrderResponse | null>(null);
+
+  // Modern Dialog State
+  alertDialog = signal<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    variant: 'danger' | 'warning' | 'info' | 'success';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    variant: 'warning',
+  });
 
   // Form Model
   newPo: {
@@ -124,11 +140,13 @@ export class Purchases implements OnInit {
       warehouse_id: this.warehouses().length > 0 ? this.warehouses()[0].id : null,
       notes: '',
     };
+    const firstProd = this.products().length > 0 ? this.products()[0] : null;
     this.poItemRows = [
       {
-        product_id: this.products().length > 0 ? this.products()[0].id : null,
+        product_id: firstProd ? firstProd.id : null,
+        product_name: firstProd ? `${firstProd.name} (${firstProd.sku})` : '',
         quantity: 1,
-        unit_cost: this.products().length > 0 ? Number(this.products()[0].cost_price) : 0,
+        unit_cost: firstProd ? Number(firstProd.cost_price) : 0,
       },
     ];
     this.showCreateModal.set(true);
@@ -142,6 +160,7 @@ export class Purchases implements OnInit {
     const firstProd = this.products().length > 0 ? this.products()[0] : null;
     this.poItemRows.push({
       product_id: firstProd ? firstProd.id : null,
+      product_name: firstProd ? `${firstProd.name} (${firstProd.sku})` : '',
       quantity: 1,
       unit_cost: firstProd ? Number(firstProd.cost_price) : 0,
     });
@@ -159,20 +178,53 @@ export class Purchases implements OnInit {
     }
   }
 
+  onProductSearchInput(row: ItemRow, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const val = input.value.trim();
+    row.product_name = input.value;
+
+    const found = this.products().find(p => 
+      `${p.name} (${p.sku})`.toLowerCase() === val.toLowerCase() ||
+      p.name.toLowerCase() === val.toLowerCase() ||
+      p.sku.toLowerCase() === val.toLowerCase()
+    );
+
+    if (found) {
+      row.product_id = found.id;
+      row.product_name = `${found.name} (${found.sku})`;
+      row.unit_cost = Number(found.cost_price) || 0;
+    } else {
+      row.product_id = null;
+    }
+  }
+
+  closeAlertDialog(): void {
+    this.alertDialog.update((d) => ({ ...d, isOpen: false }));
+  }
+
+  showAlert(message: string, title: string = 'Perhatian', variant: 'danger' | 'warning' | 'info' | 'success' = 'warning'): void {
+    this.alertDialog.set({
+      isOpen: true,
+      title,
+      message,
+      variant,
+    });
+  }
+
   calculateEstimatedTotal(): number {
     return this.poItemRows.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
   }
 
   submitCreate(): void {
     if (!this.newPo.supplier_id) {
-      alert('Pilih supplier terlebih dahulu');
+      this.showAlert('Pilih supplier terlebih dahulu sebelum menyimpan pesanan pembelian.', 'Peringatan Validasi', 'warning');
       return;
     }
 
     const validItems: PurchaseOrderItemCreate[] = [];
     for (const row of this.poItemRows) {
       if (!row.product_id || row.quantity <= 0) {
-        alert('Pastikan semua baris produk dan kuantitas diisi dengan benar');
+        this.showAlert('Pastikan semua baris produk dan kuantitas diisi dengan benar.', 'Peringatan Validasi', 'warning');
         return;
       }
       validItems.push({
@@ -183,7 +235,7 @@ export class Purchases implements OnInit {
     }
 
     if (validItems.length === 0) {
-      alert('Tambahkan minimal 1 barang');
+      this.showAlert('Tambahkan minimal 1 barang untuk membuat pesanan pembelian.', 'Peringatan Validasi', 'warning');
       return;
     }
 
@@ -205,7 +257,7 @@ export class Purchases implements OnInit {
       },
       error: (err) => {
         this.submitting.set(false);
-        alert(err.error?.detail || 'Gagal membuat pesanan pembelian');
+        this.showAlert(err.error?.detail || 'Gagal membuat pesanan pembelian', 'Gagal Membuat PO', 'danger');
       },
     });
   }
@@ -232,7 +284,7 @@ export class Purchases implements OnInit {
       },
       error: (err) => {
         this.submitting.set(false);
-        alert(err.error?.detail || 'Gagal mengirim pesanan pembelian');
+        this.showAlert(err.error?.detail || 'Gagal mengirim pesanan pembelian', 'Gagal Kirim PO', 'danger');
       },
     });
   }
@@ -274,7 +326,7 @@ export class Purchases implements OnInit {
         },
         error: (err) => {
           this.submitting.set(false);
-          alert(err.error?.detail || 'Gagal memproses penerimaan barang');
+          this.showAlert(err.error?.detail || 'Gagal memproses penerimaan barang', 'Gagal Terima Barang', 'danger');
         },
       });
   }

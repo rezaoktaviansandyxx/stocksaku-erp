@@ -190,4 +190,17 @@
       </div>
     </div>
   }
+
+  <!-- Confirm Toggle Status Dialog -->
+  <app-confirm-dialog
+    [isOpen]="showStatusConfirm()"
+    [title]="warehouseToToggle()?.is_active ? 'Nonaktifkan Gudang' : 'Aktifkan Gudang'"
+    [message]="'Apakah Anda yakin ingin ' + (warehouseToToggle()?.is_active ? 'menonaktifkan' : 'mengaktifkan') + ' gudang &quot;' + (warehouseToToggle()?.name || '') + '&quot;?'"
+    [confirmText]="warehouseToToggle()?.is_active ? 'Ya, Nonaktifkan' : 'Ya, Aktifkan'"
+    cancelText="Batal"
+    [variant]="warehouseToToggle()?.is_active ? 'danger' : 'info'"
+    [loading]="statusToggleLoading()"
+    (confirmed)="confirmToggleStatus()"
+    (cancelled)="cancelToggleStatus()"
+  ></app-confirm-dialog>
 </div>

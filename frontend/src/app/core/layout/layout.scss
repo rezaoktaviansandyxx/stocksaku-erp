@@ -92,6 +92,28 @@
   justify-content: center;
 }
 
+.sidebar-footer-brand {
+  padding: 1.25rem 1.25rem;
+  border-top: 1px solid var(--color-sidebar-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: auto;
+}
+
+.sidebar-footer-brand .app-version {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #38bdf8;
+  letter-spacing: 0.03em;
+}
+
+.sidebar-footer-brand .app-copyright {
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
 .sidebar-footer {
   padding: 1rem;
   border-top: 1px solid var(--color-sidebar-border);
@@ -366,6 +388,9 @@
 
 /* Extra small mobile adjustments */
 @media (max-width: 576px) {
+  .sidebar {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+  }
   .header {
     padding: 0.75rem 1rem;
   }

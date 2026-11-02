@@ -1,14 +1,15 @@
 import { Component, signal, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../../core/services/auth.service';
-import { InventoryService } from '../../core/services/inventory.service';
-import type { WarehouseResponse } from '../../core/models/inventory.model';
+import { AuthService } from '@core/services';
+import { InventoryService } from '@core/services';
+import { ConfirmDialog } from '@shared/components';
+import type { WarehouseResponse } from '@core/models';
 
 @Component({
   selector: 'app-warehouses',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ConfirmDialog],
   templateUrl: './warehouses.html',
   styleUrl: './warehouses.scss',
 })
@@ -31,6 +32,11 @@ export class Warehouses implements OnInit {
   formName = '';
   formIsActive = true;
   modalError = signal<string | null>(null);
+
+  // Status Change Confirmation Dialog State
+  showStatusConfirm = signal(false);
+  warehouseToToggle = signal<WarehouseResponse | null>(null);
+  statusToggleLoading = signal(false);
 
   ngOnInit(): void {
     this.loadWarehouses();
@@ -133,17 +139,30 @@ export class Warehouses implements OnInit {
   }
 
   toggleWarehouseStatus(warehouse: WarehouseResponse): void {
+    this.warehouseToToggle.set(warehouse);
+    this.showStatusConfirm.set(true);
+  }
+
+  cancelToggleStatus(): void {
+    this.showStatusConfirm.set(false);
+    this.warehouseToToggle.set(null);
+  }
+
+  confirmToggleStatus(): void {
+    const warehouse = this.warehouseToToggle();
+    if (!warehouse) return;
+
     const newStatus = !warehouse.is_active;
-    const actionText = newStatus ? 'mengaktifkan' : 'menonaktifkan';
-    if (!confirm(`Apakah Anda yakin ingin ${actionText} gudang "${warehouse.name}"?`)) {
-      return;
-    }
+    this.statusToggleLoading.set(true);
 
     const headers = this.auth.buildHeaders();
     this.inventory
       .updateWarehouse(warehouse.id, { is_active: newStatus }, headers)
       .subscribe({
         next: () => {
+          this.statusToggleLoading.set(false);
+          this.showStatusConfirm.set(false);
+          this.warehouseToToggle.set(null);
           this.successMessage.set(
             `Gudang "${warehouse.name}" berhasil ${newStatus ? 'diaktifkan' : 'dinonaktifkan'}.`
           );
@@ -151,6 +170,9 @@ export class Warehouses implements OnInit {
           setTimeout(() => this.successMessage.set(null), 3000);
         },
         error: (err) => {
+          this.statusToggleLoading.set(false);
+          this.showStatusConfirm.set(false);
+          this.warehouseToToggle.set(null);
           this.error.set(err.error?.detail || 'Gagal mengubah status gudang');
         },
       });

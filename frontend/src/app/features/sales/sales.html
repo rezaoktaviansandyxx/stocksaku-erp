@@ -49,7 +49,8 @@
         <button class="btn btn-outline" (click)="openCreateModal()">Buat Penjualan</button>
       </div>
     } @else {
-      <div class="table-responsive">
+      <!-- Desktop & Tablet View: Table -->
+      <div class="table-responsive desktop-only">
         <table class="table">
           <thead>
             <tr>
@@ -87,6 +88,44 @@
             }
           </tbody>
         </table>
+      </div>
+
+      <!-- Mobile View: Card List -->
+      <div class="mobile-card-list mobile-only">
+        @for (so of sales(); track so.id) {
+          <div class="mobile-data-card">
+            <div class="mobile-card-header">
+              <span class="font-mono font-medium order-no">{{ so.order_number }}</span>
+              <span class="badge"
+                [class.badge-draft]="so.status === 'Draft'"
+                [class.badge-confirmed]="so.status === 'Confirmed'"
+                [class.badge-cancelled]="so.status === 'Cancelled'">
+                {{ statusLabel(so.status) }}
+              </span>
+            </div>
+            <div class="mobile-card-body">
+              <div class="mobile-card-row">
+                <span class="muted">Pelanggan:</span>
+                <span class="font-medium">{{ so.customer_name || 'Umum' }}</span>
+              </div>
+              <div class="mobile-card-row">
+                <span class="muted">Tanggal:</span>
+                <span>{{ formatDate(so.created_at) }}</span>
+              </div>
+              <div class="mobile-card-row">
+                <span class="muted">Total:</span>
+                <span class="font-semibold total-val">{{ formatCurrency(so.total_amount) }}</span>
+              </div>
+            </div>
+            <div class="mobile-card-actions">
+              <button class="btn btn-sm btn-outline" (click)="viewDetail(so)">Detail</button>
+              @if (so.status === 'Draft') {
+                <button class="btn btn-sm btn-success" (click)="openConfirmModal(so)">Konfirmasi</button>
+                <button class="btn btn-sm btn-danger-outline" (click)="openCancelModal(so)">Batalkan</button>
+              }
+            </div>
+          </div>
+        }
       </div>
     }
   </div>
@@ -148,12 +187,21 @@
                   @for (row of soItemRows; track $index) {
                     <tr>
                       <td>
-                        <select [(ngModel)]="row.product_id" [name]="'product_' + $index" (change)="onProductSelected(row)" required>
-                          <option [ngValue]="null" disabled>Pilih Produk</option>
+                        <input
+                          type="text"
+                          [name]="'product_search_' + $index"
+                          list="products_datalist"
+                          [ngModel]="row.product_name"
+                          (input)="onProductSearchInput(row, $event)"
+                          placeholder="Cari nama atau SKU produk..."
+                          required
+                          autocomplete="off"
+                        />
+                        <datalist id="products_datalist">
                           @for (p of products(); track p.id) {
-                            <option [ngValue]="p.id">{{ p.name }} ({{ p.sku }})</option>
+                            <option [value]="p.name + ' (' + p.sku + ')'"></option>
                           }
-                        </select>
+                        </datalist>
                       </td>
                       <td class="stock-cell">
                         @if (row.available === null) {
@@ -163,13 +211,29 @@
                         }
                       </td>
                       <td>
-                        <input type="number" step="any" min="0.001" [(ngModel)]="row.quantity" [name]="'qty_' + $index" required />
+                        <input
+                          type="text"
+                          inputmode="numeric" pattern="[0-9]*"
+                          appNumberFormat
+                          [(ngModel)]="row.quantity"
+                          [name]="'qty_' + $index"
+                          placeholder="0"
+                          required
+                        />
                         @if (isOverStock(row)) {
                           <small class="stock-warning">Melebihi stok</small>
                         }
                       </td>
                       <td>
-                        <input type="number" step="100" min="0" [(ngModel)]="row.unit_price" [name]="'price_' + $index" required />
+                        <input
+                          type="text"
+                          inputmode="numeric" pattern="[0-9]*"
+                          appNumberFormat
+                          [(ngModel)]="row.unit_price"
+                          [name]="'price_' + $index"
+                          placeholder="0"
+                          required
+                        />
                       </td>
                       <td>
                         @if (soItemRows.length > 1) {
@@ -343,4 +407,16 @@
       </div>
     </div>
   }
+
+  <!-- Modern Alert / Information Dialog -->
+  <app-confirm-dialog
+    [isOpen]="alertDialog().isOpen"
+    [title]="alertDialog().title"
+    [message]="alertDialog().message"
+    [variant]="alertDialog().variant"
+    confirmText="Mengerti"
+    [showCancel]="false"
+    (confirmed)="closeAlertDialog()"
+    (cancelled)="closeAlertDialog()"
+  ></app-confirm-dialog>
 </div>

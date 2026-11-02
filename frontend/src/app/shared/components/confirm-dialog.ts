@@ -9,7 +9,7 @@ import { CommonModule } from '@angular/common';
     @if (isOpen) {
       <div class="confirm-overlay" (click)="onBackdropClick($event)">
         <div class="confirm-modal" role="dialog" aria-modal="true">
-          <div class="confirm-icon-wrapper" [class.danger]="variant === 'danger'" [class.warning]="variant === 'warning'" [class.info]="variant === 'info'">
+          <div class="confirm-icon-wrapper" [class.danger]="variant === 'danger'" [class.warning]="variant === 'warning'" [class.info]="variant === 'info'" [class.success]="variant === 'success'">
             @if (variant === 'danger') {
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"/>
@@ -19,6 +19,11 @@ import { CommonModule } from '@angular/common';
                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
                 <polyline points="16 17 21 12 16 7"/>
                 <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+            } @else if (variant === 'success') {
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
               </svg>
             } @else {
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -35,20 +40,23 @@ import { CommonModule } from '@angular/common';
           </div>
 
           <div class="confirm-actions">
-            <button
-              type="button"
-              class="btn-confirm-cancel"
-              (click)="onCancel()"
-              [disabled]="loading"
-            >
-              {{ cancelText }}
-            </button>
+            @if (showCancel) {
+              <button
+                type="button"
+                class="btn-confirm-cancel"
+                (click)="onCancel()"
+                [disabled]="loading"
+              >
+                {{ cancelText }}
+              </button>
+            }
             <button
               type="button"
               class="btn-confirm-action"
               [class.danger]="variant === 'danger'"
               [class.warning]="variant === 'warning'"
               [class.info]="variant === 'info'"
+              [class.success]="variant === 'success'"
               (click)="onConfirm()"
               [disabled]="loading"
             >
@@ -116,6 +124,11 @@ import { CommonModule } from '@angular/common';
     .confirm-icon-wrapper.info {
       background: #e0f2fe;
       color: #0284c7;
+    }
+
+    .confirm-icon-wrapper.success {
+      background: #dcfce7;
+      color: #16a34a;
     }
 
     .confirm-content {
@@ -204,6 +217,18 @@ import { CommonModule } from '@angular/common';
       box-shadow: 0 4px 6px -1px rgba(217, 119, 6, 0.2);
     }
 
+    .btn-confirm-action.success {
+      background: #16a34a;
+      color: #ffffff;
+      border: 1px solid #15803d;
+    }
+
+    .btn-confirm-action.success:hover:not(:disabled) {
+      background: #15803d;
+      border-color: #166534;
+      box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2);
+    }
+
     .btn-confirm-cancel:disabled,
     .btn-confirm-action:disabled {
       opacity: 0.6;
@@ -246,7 +271,8 @@ export class ConfirmDialog {
   @Input() message = 'Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.';
   @Input() confirmText = 'Ya, Hapus';
   @Input() cancelText = 'Batal';
-  @Input() variant: 'danger' | 'warning' | 'info' = 'danger';
+  @Input() showCancel = true;
+  @Input() variant: 'danger' | 'warning' | 'info' | 'success' = 'danger';
   @Input() loading = false;
 
   @Output() confirmed = new EventEmitter<void>();

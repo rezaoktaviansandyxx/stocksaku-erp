@@ -1,20 +1,20 @@
 import { Component, signal, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ConfirmDialog } from '../../shared/components/confirm-dialog';
-import { AuthService } from '../../core/services/auth.service';
-import { SupplierService } from '../../core/services/supplier.service';
-import { CustomerService } from '../../core/services/customer.service';
+import { ConfirmDialog } from '@shared/components';
+import { AuthService } from '@core/services';
+import { SupplierService } from '@core/services';
+import { CustomerService } from '@core/services';
 import type {
   SupplierCreate,
   SupplierResponse,
   SupplierUpdate,
-} from '../../core/models/supplier.model';
+} from '@core/models';
 import type {
   CustomerCreate,
   CustomerResponse,
   CustomerUpdate,
-} from '../../core/models/customer.model';
+} from '@core/models';
 
 interface PartnerForm {
   name: string;
@@ -131,6 +131,13 @@ export class Partners implements OnInit {
   closeModal(): void {
     this.showModal.set(false);
     this.editingId = null;
+  }
+
+  onPhoneInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const sanitized = input.value.replace(/\D/g, '');
+    this.formModel.phone = sanitized;
+    input.value = sanitized;
   }
 
   savePartner(): void {

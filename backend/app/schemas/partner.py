@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class SupplierBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=150)
-    phone: Optional[str] = Field(default=None, max_length=50)
+    phone: Optional[str] = Field(default=None, max_length=50, pattern=r"^[0-9+\-\s()]*$")
     email: Optional[str] = Field(default=None, max_length=150)
 
 
@@ -15,7 +15,7 @@ class SupplierCreate(SupplierBase):
 
 class SupplierUpdate(BaseModel):
     name: Optional[str] = Field(default=None, min_length=1, max_length=150)
-    phone: Optional[str] = Field(default=None, max_length=50)
+    phone: Optional[str] = Field(default=None, max_length=50, pattern=r"^[0-9+\-\s()]*$")
     email: Optional[str] = Field(default=None, max_length=150)
 
 
@@ -29,7 +29,7 @@ class SupplierResponse(SupplierBase):
 
 class CustomerBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=150)
-    phone: Optional[str] = Field(default=None, max_length=50)
+    phone: Optional[str] = Field(default=None, max_length=50, pattern=r"^[0-9+\-\s()]*$")
     email: Optional[str] = Field(default=None, max_length=150)
 
 
@@ -39,7 +39,7 @@ class CustomerCreate(CustomerBase):
 
 class CustomerUpdate(BaseModel):
     name: Optional[str] = Field(default=None, min_length=1, max_length=150)
-    phone: Optional[str] = Field(default=None, max_length=50)
+    phone: Optional[str] = Field(default=None, max_length=50, pattern=r"^[0-9+\-\s()]*$")
     email: Optional[str] = Field(default=None, max_length=150)
 
 

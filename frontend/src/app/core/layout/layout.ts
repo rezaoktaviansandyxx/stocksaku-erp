@@ -3,38 +3,51 @@ import { RouterOutlet, RouterLink, RouterLinkActive, NavigationEnd, Router } fro
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
 import { AuthService } from '../services/auth.service';
-import { ConfirmDialog } from '../../shared/components/confirm-dialog';
+import { ConfirmDialog } from '@shared/components';
+import { AppIconComponent, IconName } from '@shared/components';
+import { ToastContainerComponent } from '@shared/components';
+import { APP_VERSION } from '../../version';
 
 interface NavItem {
   label: string;
   path: string;
-  icon: string;
+  icon: IconName;
   title: string;
 }
 
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, ConfirmDialog],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    CommonModule,
+    ConfirmDialog,
+    AppIconComponent,
+    ToastContainerComponent
+  ],
   templateUrl: './layout.html',
   styleUrl: './layout.scss',
 })
 export class Layout {
   navItems: NavItem[] = [
-    { label: 'Beranda', path: '/dashboard', icon: '🏠', title: 'Beranda' },
-    { label: 'Produk', path: '/products', icon: '📦', title: 'Produk' },
-    { label: 'Kategori & Satuan', path: '/products/categories-units', icon: '🏷️', title: 'Kategori & Satuan' },
-    { label: 'Gudang', path: '/warehouses', icon: '🏢', title: 'Kelola Gudang' },
-    { label: 'Inventaris', path: '/inventory', icon: '📋', title: 'Inventaris' },
-    { label: 'Pembelian (PO)', path: '/purchases', icon: '🛒', title: 'Pesanan Pembelian (PO)' },
-    { label: 'Penjualan (SO)', path: '/sales', icon: '🧾', title: 'Pesanan Penjualan (SO)' },
-    { label: 'Mitra & Kontak', path: '/partners', icon: '👥', title: 'Kontak & Mitra Bisnis' },
+    { label: 'Beranda', path: '/dashboard', icon: 'dashboard', title: 'Beranda' },
+    { label: 'Produk', path: '/products', icon: 'box', title: 'Produk' },
+    { label: 'Kategori & Satuan', path: '/products/categories-units', icon: 'tag', title: 'Kategori & Satuan' },
+    { label: 'Gudang', path: '/warehouses', icon: 'warehouse', title: 'Kelola Gudang' },
+    { label: 'Inventaris', path: '/inventory', icon: 'boxes', title: 'Inventaris' },
+    { label: 'Pembelian (PO)', path: '/purchases', icon: 'shopping-bag', title: 'Pesanan Pembelian (PO)' },
+    { label: 'Penjualan (SO)', path: '/sales', icon: 'shopping-cart', title: 'Pesanan Penjualan (SO)' },
+    { label: 'Mitra & Kontak', path: '/partners', icon: 'users', title: 'Kontak & Mitra Bisnis' },
   ];
 
   mobileMenuOpen = signal(false);
   showLogoutConfirm = signal(false);
   logoutLoading = signal(false);
   pageTitle = signal('StokSaku ERP');
+  appVersion = APP_VERSION;
+  currentYear = new Date().getFullYear();
 
   constructor(
     public auth: AuthService,

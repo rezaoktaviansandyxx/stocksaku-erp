@@ -1,4 +1,5 @@
 import csv
+from datetime import datetime, time, timezone
 import io
 from decimal import Decimal
 from typing import Optional
@@ -754,9 +755,23 @@ def _movements_query(
     if product_id is not None:
         query = query.where(StockMovement.product_id == product_id)
     if start_date:
-        query = query.where(StockMovement.created_at >= start_date)
+        try:
+            start_dt = datetime.fromisoformat(start_date)
+            if start_dt.tzinfo is None:
+                start_dt = start_dt.replace(tzinfo=timezone.utc)
+            query = query.where(StockMovement.created_at >= start_dt)
+        except ValueError:
+            pass
     if end_date:
-        query = query.where(StockMovement.created_at <= end_date)
+        try:
+            parsed = datetime.fromisoformat(end_date)
+            if len(end_date.strip()) <= 10:
+                end_dt = datetime.combine(parsed.date(), time.max, tzinfo=timezone.utc)
+            else:
+                end_dt = parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
+            query = query.where(StockMovement.created_at <= end_dt)
+        except ValueError:
+            pass
 
     return query
 

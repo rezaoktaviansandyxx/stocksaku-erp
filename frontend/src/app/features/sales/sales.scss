@@ -321,6 +321,10 @@
 }
 
 .items-table {
+  .required {
+    color: var(--color-danger);
+  }
+
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 1rem;
@@ -446,4 +450,114 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+
+/* Mobile responsive adjustments */
+@media (max-width: 576px) {
+  .sales-page {
+    padding: 1rem;
+  }
+
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+
+    button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+
+    button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}
+
+/* Desktop / Mobile Toggle & Card List */
+.desktop-only {
+  display: block;
+}
+
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .desktop-only {
+    display: none !important;
+  }
+
+  .mobile-only {
+    display: flex !important;
+  }
+
+  .mobile-card-list {
+    flex-direction: column;
+    gap: 0.85rem;
+    padding: 0.85rem;
+  }
+
+  .mobile-data-card {
+    background: #ffffff;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 0.85rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  .mobile-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+
+    .order-no {
+      font-size: 0.9rem;
+      color: #0f172a;
+    }
+  }
+
+  .mobile-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+
+    .mobile-card-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .total-val {
+      color: var(--color-primary);
+    }
+  }
+
+  .mobile-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #f1f5f9;
+
+    button {
+      flex: 1;
+      justify-content: center;
+    }
+  }
 }

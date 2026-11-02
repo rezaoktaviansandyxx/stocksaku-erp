@@ -7,7 +7,7 @@
     </div>
 
     <div class="org-nav-actions">
-      <button class="btn-logout" (click)="logout()" title="Keluar dari akun">
+      <button class="btn-logout" (click)="openLogoutConfirm()" title="Keluar dari akun">
         <span class="logout-icon">🚪</span>
         <span class="logout-text">Keluar</span>
       </button>
@@ -18,4 +18,17 @@
   <main class="org-main">
     <router-outlet />
   </main>
+
+  <!-- Logout Confirmation Dialog -->
+  <app-confirm-dialog
+    [isOpen]="showLogoutConfirm()"
+    title="Konfirmasi Keluar"
+    message="Apakah Anda yakin ingin keluar dari sistem StokSaku ERP? Sesi login Anda akan diakhiri."
+    confirmText="Ya, Keluar"
+    cancelText="Batal"
+    variant="danger"
+    [loading]="logoutLoading()"
+    (confirmed)="confirmLogout()"
+    (cancelled)="cancelLogout()"
+  ></app-confirm-dialog>
 </div>

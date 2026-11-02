@@ -1,20 +1,23 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { SalesService } from '../../core/services/sales.service';
-import { CustomerService } from '../../core/services/customer.service';
-import { InventoryService } from '../../core/services/inventory.service';
-import { AuthService } from '../../core/services/auth.service';
+import { SalesService } from '@core/services';
+import { CustomerService } from '@core/services';
+import { InventoryService } from '@core/services';
+import { AuthService } from '@core/services';
+import { ConfirmDialog } from '@shared/components';
+import { NumberFormatDirective } from '@shared/directives';
 import type {
   SalesOrderCreate,
   SalesOrderItemCreate,
   SalesOrderResponse,
-} from '../../core/models/sales.model';
-import type { CustomerResponse } from '../../core/models/customer.model';
-import type { ProductResponse, WarehouseResponse } from '../../core/models/inventory.model';
+} from '@core/models';
+import type { CustomerResponse } from '@core/models';
+import type { ProductResponse, WarehouseResponse } from '@core/models';
 
 interface ItemRow {
   product_id: number | null;
+  product_name?: string;
   quantity: number;
   unit_price: number;
   available: number | null;
@@ -23,7 +26,7 @@ interface ItemRow {
 @Component({
   selector: 'app-sales',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ConfirmDialog, NumberFormatDirective],
   templateUrl: './sales.html',
   styleUrl: './sales.scss',
 })
@@ -46,6 +49,19 @@ export class Sales implements OnInit {
   selectedSo = signal<SalesOrderResponse | null>(null);
   soToConfirm = signal<SalesOrderResponse | null>(null);
   soToCancel = signal<SalesOrderResponse | null>(null);
+
+  // Modern Dialog State
+  alertDialog = signal<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    variant: 'danger' | 'warning' | 'info' | 'success';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    variant: 'warning',
+  });
 
   // Form Model
   newSo: {
@@ -123,6 +139,7 @@ export class Sales implements OnInit {
     this.soItemRows = [
       {
         product_id: firstProd ? firstProd.id : null,
+        product_name: firstProd ? `${firstProd.name} (${firstProd.sku})` : '',
         quantity: 1,
         unit_price: firstProd ? Number(firstProd.selling_price) : 0,
         available: null,
@@ -140,6 +157,7 @@ export class Sales implements OnInit {
     const firstProd = this.products().length > 0 ? this.products()[0] : null;
     this.soItemRows.push({
       product_id: firstProd ? firstProd.id : null,
+      product_name: firstProd ? `${firstProd.name} (${firstProd.sku})` : '',
       quantity: 1,
       unit_price: firstProd ? Number(firstProd.selling_price) : 0,
       available: null,
@@ -202,6 +220,55 @@ export class Sales implements OnInit {
     return this.soItemRows.some((r) => this.isOverStock(r));
   }
 
+  
+  formatNumberInput(val: number): string {
+    if (!val && val !== 0) return '';
+    return new Intl.NumberFormat('id-ID').format(val);
+  }
+
+  parseNumberInput(val: string): number {
+    if (!val) return 0;
+    const cleaned = val.toString().replace(/\./g, '').replace(/,/g, '.');
+    const num = parseFloat(cleaned);
+    return isNaN(num) ? 0 : num;
+  }
+
+
+  onProductSearchInput(row: ItemRow, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const val = input.value.trim();
+    row.product_name = input.value;
+
+    const found = this.products().find(p => 
+      `${p.name} (${p.sku})`.toLowerCase() === val.toLowerCase() ||
+      p.name.toLowerCase() === val.toLowerCase() ||
+      p.sku.toLowerCase() === val.toLowerCase()
+    );
+
+    if (found) {
+      row.product_id = found.id;
+      row.product_name = `${found.name} (${found.sku})`;
+      row.unit_price = Number(found.selling_price) || 0;
+      this.refreshAvailability(row);
+    } else {
+      row.product_id = null;
+      row.available = null;
+    }
+  }
+
+  closeAlertDialog(): void {
+    this.alertDialog.update((d) => ({ ...d, isOpen: false }));
+  }
+
+  showAlert(message: string, title: string = 'Perhatian', variant: 'danger' | 'warning' | 'info' | 'success' = 'warning'): void {
+    this.alertDialog.set({
+      isOpen: true,
+      title,
+      message,
+      variant,
+    });
+  }
+
   calculateTotal(): number {
     return this.soItemRows.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
   }
@@ -210,7 +277,7 @@ export class Sales implements OnInit {
     const validItems: SalesOrderItemCreate[] = [];
     for (const row of this.soItemRows) {
       if (!row.product_id || row.quantity <= 0) {
-        alert('Pastikan semua baris produk dan kuantitas diisi dengan benar');
+        this.showAlert('Pastikan semua baris produk dan kuantitas diisi dengan benar.', 'Peringatan Validasi', 'warning');
         return;
       }
       validItems.push({
@@ -221,7 +288,7 @@ export class Sales implements OnInit {
     }
 
     if (validItems.length === 0) {
-      alert('Tambahkan minimal 1 barang');
+      this.showAlert('Tambahkan minimal 1 barang untuk membuat pesanan penjualan.', 'Peringatan Validasi', 'warning');
       return;
     }
 
@@ -243,7 +310,7 @@ export class Sales implements OnInit {
       },
       error: (err) => {
         this.submitting.set(false);
-        alert(err.error?.detail || 'Gagal membuat pesanan penjualan');
+        this.showAlert(err.error?.detail || 'Gagal membuat pesanan penjualan', 'Gagal Membuat Penjualan', 'danger');
       },
     });
   }

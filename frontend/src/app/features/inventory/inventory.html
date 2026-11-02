@@ -106,7 +106,7 @@
     <div class="filter-toolbar-card">
       <div class="filter-inputs-group">
         <div class="search-input-wrapper">
-          <span class="search-icon">🔍</span>
+          <span class="search-icon"><app-icon name="search" [size]="16" /></span>
           <input
             type="text"
             placeholder="Cari SKU atau nama produk..."
@@ -165,7 +165,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (b of filteredBalances(); track b.id) {
+              @for (b of paginatedBalances(); track b.id) {
                 <tr>
                   <td>
                     <div class="product-cell">
@@ -194,6 +194,15 @@
             </tbody>
           </table>
         </div>
+
+        <app-pagination
+          [totalItems]="filteredBalances().length"
+          [currentPage]="currentPage()"
+          [pageSize]="pageSize()"
+          [pageSizeOptions]="[10, 25, 50]"
+          (pageChange)="onPageChange($event)"
+          (pageSizeChange)="onPageSizeChange($event)"
+        />
       }
     </div>
   }
@@ -428,13 +437,13 @@
                   Kuantitas <span class="required">*</span>
                 </label>
                 <input
-                  type="number"
-                  step="any"
+                  type="text"
+                  inputmode="numeric" pattern="[0-9]*"
+                  appNumberFormat
                   class="form-control"
                   [(ngModel)]="txQuantity"
                   name="quantity"
                   required
-                  min="0.001"
                   placeholder="0"
                 />
               </div>

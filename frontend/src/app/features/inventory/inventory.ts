@@ -1,27 +1,37 @@
 import { Component, signal, computed, OnInit, inject } from '@angular/core';
+import { AppIconComponent } from '@shared/components';
+import { AppBadgeComponent } from '@shared/components';
+import { PaginationComponent } from '@shared/components';
+import { RupiahPipe } from '@shared/pipes';
+import { NumberFormatDirective } from '@shared/directives';
+import { ToastService } from '@core/services';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../../core/services/auth.service';
-import { InventoryService } from '../../core/services/inventory.service';
+import { AuthService } from '@core/services';
+import { InventoryService } from '@core/services';
 import type {
   ProductResponse,
   StockBalanceResponse,
   StockMovementResponse,
   WarehouseResponse,
-} from '../../core/models/inventory.model';
+} from '@core/models';
 
 type TransactionType = 'initial' | 'inbound' | 'outbound' | 'adjustment';
 
 @Component({
   selector: 'app-inventory',
   standalone: true,
-  imports: [CommonModule, FormsModule, DecimalPipe],
+  imports: [CommonModule, FormsModule, DecimalPipe, AppIconComponent, PaginationComponent, NumberFormatDirective],
   templateUrl: './inventory.html',
   styleUrl: './inventory.scss',
 })
 export class Inventory implements OnInit {
   private auth = inject(AuthService);
   private inventory = inject(InventoryService);
+  private toast = inject(ToastService);
+
+  currentPage = signal(1);
+  pageSize = signal(10);
 
   activeTab = signal<'balances' | 'movements'>('balances');
   loading = signal(true);
@@ -46,6 +56,22 @@ export class Inventory implements OnInit {
   // Balances filter & search
   balanceSearchTerm = '';
   balanceWarehouseFilter: number | null = null;
+
+  
+  paginatedBalances = computed(() => {
+    const list = this.filteredBalances();
+    const start = (this.currentPage() - 1) * this.pageSize();
+    return list.slice(start, start + this.pageSize());
+  });
+
+  onPageChange(page: number): void {
+    this.currentPage.set(page);
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize.set(size);
+    this.currentPage.set(1);
+  }
 
   filteredBalances = computed(() => {
     let list = this.balances();

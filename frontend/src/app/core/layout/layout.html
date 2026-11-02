@@ -20,12 +20,19 @@
             [routerLinkActiveOptions]="{ exact: true }"
             (click)="closeMobileMenu()"
           >
-            <span class="icon">{{ item.icon }}</span>
+            <span class="icon">
+              <app-icon [name]="item.icon" [size]="18" />
+            </span>
             <span class="label">{{ item.label }}</span>
           </a>
         </li>
       }
     </ul>
+
+    <div class="sidebar-footer-brand">
+      <div class="app-version">v{{ appVersion }}</div>
+      <div class="app-copyright">© {{ currentYear }} StokSaku ERP</div>
+    </div>
   </nav>
 
   <!-- Mobile overlay -->
@@ -59,7 +66,7 @@
           </div>
         }
         <button class="logout-btn-header" (click)="openLogoutConfirm()" title="Keluar dari akun">
-          <span>🚪</span>
+          <app-icon name="log-out" [size]="16" />
           <span class="btn-text">Keluar</span>
         </button>
       </div>
@@ -70,6 +77,9 @@
       <router-outlet />
     </main>
   </div>
+
+  <!-- Global Toast Notification Container -->
+  <app-toast-container />
 
   <!-- Logout Confirmation Dialog -->
   <app-confirm-dialog

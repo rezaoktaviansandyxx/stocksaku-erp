@@ -7,27 +7,17 @@
     </div>
     <div class="header-actions-group">
       <button class="btn btn-primary" (click)="openModal()">
-        <span class="btn-icon">＋</span> Tambah Produk
+        <app-icon name="plus" [size]="16" /> Tambah Produk
       </button>
     </div>
   </div>
 
-  <!-- Notification Banner -->
-  @if (successMessage()) {
-    <div class="alert-banner alert-success">
-      <span>✓</span> {{ successMessage() }}
-    </div>
-  }
-  @if (error()) {
-    <div class="error-banner">
-      <span>⚠</span> {{ error() }}
-    </div>
-  }
-
   <!-- Search & Toolbar -->
   <div class="toolbar-card">
     <div class="search-input-wrapper">
-      <span class="search-icon">🔍</span>
+      <span class="search-icon">
+        <app-icon name="search" [size]="16" />
+      </span>
       <input
         type="text"
         placeholder="Cari SKU atau nama produk..."
@@ -35,8 +25,22 @@
         (ngModelChange)="applyFilter()"
       />
     </div>
+
+    <div class="filter-category-wrapper" style="display: flex; align-items: center; gap: 0.5rem;">
+      <app-icon name="filter" [size]="16" />
+      <select
+        [(ngModel)]="selectedCategory"
+        style="padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; background: #fff; font-size: 0.875rem;"
+      >
+        <option [ngValue]="null">Semua Kategori</option>
+        @for (cat of categories(); track cat.id) {
+          <option [ngValue]="cat.id">{{ cat.name }}</option>
+        }
+      </select>
+    </div>
+
     <div class="toolbar-stats">
-      Total: <strong>{{ products().length }}</strong> produk terdaftar
+      Total: <strong>{{ filteredAndSortedProducts().length }}</strong> produk terdaftar
     </div>
   </div>
 
@@ -55,12 +59,20 @@
         <table class="product-table">
           <thead>
             <tr>
-              <th>SKU</th>
-              <th>Nama Produk</th>
+              <th (click)="toggleSort('sku')" style="cursor: pointer; user-select: none;">
+                SKU {{ sortField === 'sku' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
+              </th>
+              <th (click)="toggleSort('name')" style="cursor: pointer; user-select: none;">
+                Nama Produk {{ sortField === 'name' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
+              </th>
               <th>Kategori</th>
               <th>Harga Beli</th>
-              <th>Harga Jual</th>
-              <th>Stok Min</th>
+              <th (click)="toggleSort('selling_price')" style="cursor: pointer; user-select: none;">
+                Harga Jual {{ sortField === 'selling_price' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
+              </th>
+              <th (click)="toggleSort('min_stock')" style="cursor: pointer; user-select: none;">
+                Stok Min {{ sortField === 'min_stock' ? (sortOrder === 'asc' ? '↑' : '↓') : '' }}
+              </th>
               <th>Status</th>
               <th style="text-align: right;">Aksi</th>
             </tr>
@@ -72,24 +84,27 @@
                   <span class="sku-badge">{{ p.sku }}</span>
                 </td>
                 <td>
-                  <div class="product-name">{{ p.name }}</div>
+                  <div class="product-name" style="font-weight: 600;">{{ p.name }}</div>
                 </td>
                 <td>
                   <span class="text-muted">{{ getCategoryName(p.category_id) }}</span>
                 </td>
-                <td>Rp {{ p.cost_price | number:'1.0-2' }}</td>
-                <td style="font-weight: 600; color: #0284c7;">Rp {{ p.selling_price | number:'1.0-2' }}</td>
-                <td>{{ p.min_stock }} {{ getUnitSymbol(p.unit_id) }}</td>
+                <td>{{ p.cost_price | rupiah }}</td>
+                <td style="font-weight: 600; color: #0284c7;">{{ p.selling_price | rupiah }}</td>
+                <td>{{ p.min_stock | number:'1.0-2' }} {{ getUnitSymbol(p.unit_id) }}</td>
                 <td>
-                  <span class="badge-status" [class.active]="p.is_active" [class.inactive]="!p.is_active">
-                    <span class="badge-dot"></span>
+                  <app-badge [variant]="p.is_active ? 'success' : 'neutral'" [withDot]="true">
                     {{ p.is_active ? 'Aktif' : 'Non-aktif' }}
-                  </span>
+                  </app-badge>
                 </td>
                 <td style="text-align: right;">
-                  <div class="action-cell" style="justify-content: flex-end;">
-                    <button class="btn-small" (click)="openEdit(p)" title="Edit Produk">Edit</button>
-                    <button class="btn-small btn-danger" (click)="deactivate(p)" title="Nonaktifkan Produk">Hapus</button>
+                  <div class="action-cell" style="justify-content: flex-end; gap: 0.35rem;">
+                    <button class="btn-small" (click)="openEdit(p)" title="Edit Produk">
+                      Edit
+                    </button>
+                    <button class="btn-small btn-danger" (click)="deactivate(p)" title="Nonaktifkan Produk">
+                      Nonaktifkan
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -98,14 +113,15 @@
         </table>
       </div>
 
-      <!-- Pagination -->
-      @if (totalPages() > 1) {
-        <div class="pagination">
-          <button (click)="prevPage()" [disabled]="currentPage() === 1">‹</button>
-          <span>Halaman {{ currentPage() }} dari {{ totalPages() }}</span>
-          <button (click)="nextPage()" [disabled]="currentPage() === totalPages()">›</button>
-        </div>
-      }
+      <!-- Pagination Component -->
+      <app-pagination
+        [totalItems]="filteredAndSortedProducts().length"
+        [currentPage]="currentPage()"
+        [pageSize]="pageSize()"
+        [pageSizeOptions]="[10, 25, 50]"
+        (pageChange)="onPageChange($event)"
+        (pageSizeChange)="onPageSizeChange($event)"
+      />
     }
   </div>
 
@@ -160,8 +176,9 @@
                   <span class="input-prefix">Rp</span>
                   <input
                     id="prod-cost"
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputmode="numeric" pattern="[0-9]*"
+                    appNumberFormat
                     placeholder="0"
                     [(ngModel)]="formModel.cost_price"
                     name="cost_price"
@@ -178,8 +195,9 @@
                   <span class="input-prefix">Rp</span>
                   <input
                     id="prod-price"
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputmode="numeric" pattern="[0-9]*"
+                    appNumberFormat
                     placeholder="0"
                     [(ngModel)]="formModel.selling_price"
                     name="selling_price"
@@ -194,8 +212,9 @@
                 </label>
                 <input
                   id="prod-min-stock"
-                  type="number"
-                  step="0.001"
+                  type="text"
+                  inputmode="numeric" pattern="[0-9]*"
+                  appNumberFormat
                   placeholder="0"
                   [(ngModel)]="formModel.min_stock"
                   name="min_stock"

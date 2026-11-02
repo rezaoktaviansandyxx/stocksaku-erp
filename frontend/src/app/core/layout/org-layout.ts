@@ -1,26 +1,42 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { RouterOutlet, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../services/auth.service';
+import { ConfirmDialog } from '@shared/components';
 
 @Component({
   selector: 'app-org-layout',
   standalone: true,
-  imports: [RouterOutlet, CommonModule],
+  imports: [RouterOutlet, CommonModule, ConfirmDialog],
   templateUrl: './org-layout.html',
   styleUrl: './org-layout.scss',
 })
 export class OrgLayout {
+  showLogoutConfirm = signal(false);
+  logoutLoading = signal(false);
+
   constructor(
     public auth: AuthService,
     private router: Router,
   ) {}
 
+  openLogoutConfirm(): void {
+    this.showLogoutConfirm.set(true);
+  }
+
+  cancelLogout(): void {
+    this.showLogoutConfirm.set(false);
+  }
+
   logout(): void {
-    if (!confirm('Apakah Anda yakin ingin keluar dari sistem?')) {
-      return;
-    }
+    this.openLogoutConfirm();
+  }
+
+  confirmLogout(): void {
+    this.logoutLoading.set(true);
     this.auth.logout();
+    this.showLogoutConfirm.set(false);
+    this.logoutLoading.set(false);
     this.router.navigate(['/login']);
   }
 }

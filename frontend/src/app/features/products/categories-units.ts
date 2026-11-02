@@ -1,10 +1,10 @@
 import { Component, signal, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ConfirmDialog } from '../../shared/components/confirm-dialog';
-import { AuthService } from '../../core/services/auth.service';
-import { InventoryService } from '../../core/services/inventory.service';
-import type { CategoryResponse, UnitResponse } from '../../core/models/inventory.model';
+import { ConfirmDialog } from '@shared/components';
+import { AuthService } from '@core/services';
+import { InventoryService } from '@core/services';
+import type { CategoryResponse, UnitResponse } from '@core/models';
 
 @Component({
   selector: 'app-categories-units',

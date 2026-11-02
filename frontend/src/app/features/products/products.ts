@@ -1,21 +1,27 @@
 import { Component, signal, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ConfirmDialog } from '../../shared/components/confirm-dialog';
-import { AuthService } from '../../core/services/auth.service';
-import { InventoryService } from '../../core/services/inventory.service';
+import { ConfirmDialog } from '@shared/components';
+import { AppIconComponent } from '@shared/components';
+import { AppBadgeComponent } from '@shared/components';
+import { PaginationComponent } from '@shared/components';
+import { RupiahPipe } from '@shared/pipes';
+import { NumberFormatDirective } from '@shared/directives';
+import { AuthService } from '@core/services';
+import { InventoryService } from '@core/services';
+import { ToastService } from '@core/services';
 import type {
   CategoryResponse,
   ProductResponse,
   UnitResponse,
-} from '../../core/models/inventory.model';
+} from '@core/models';
 
 interface ProductForm {
   sku: string;
   name: string;
-  cost_price: string;
-  selling_price: string;
-  min_stock: string;
+  cost_price: number | null;
+  selling_price: number | null;
+  min_stock: number | null;
   category_id: number | null;
   unit_id: number;
 }
@@ -23,24 +29,37 @@ interface ProductForm {
 @Component({
   selector: 'app-products',
   standalone: true,
-  imports: [CommonModule, FormsModule, ConfirmDialog],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ConfirmDialog,
+    AppIconComponent,
+    AppBadgeComponent,
+    PaginationComponent,
+    RupiahPipe,
+    NumberFormatDirective
+  ],
   templateUrl: './products.html',
   styleUrl: './products.scss',
 })
 export class Products implements OnInit {
   private auth = inject(AuthService);
   private inventory = inject(InventoryService);
+  private toast = inject(ToastService);
 
   loading = signal(true);
   error = signal<string | null>(null);
-  successMessage = signal<string | null>(null);
   products = signal<ProductResponse[]>([]);
   categories = signal<CategoryResponse[]>([]);
   units = signal<UnitResponse[]>([]);
 
   searchTerm = '';
+  selectedCategory: number | null = null;
+  sortField: 'name' | 'sku' | 'selling_price' | 'min_stock' = 'name';
+  sortOrder: 'asc' | 'desc' = 'asc';
+
   currentPage = signal(1);
-  pageSize = 15;
+  pageSize = signal(10);
 
   // Main Product Modal
   showModal = signal(false);
@@ -48,9 +67,9 @@ export class Products implements OnInit {
   formModel: ProductForm = {
     sku: '',
     name: '',
-    cost_price: '0',
-    selling_price: '0',
-    min_stock: '0',
+    cost_price: 0,
+    selling_price: 0,
+    min_stock: 0,
     category_id: null,
     unit_id: 0,
   };
@@ -125,22 +144,49 @@ export class Products implements OnInit {
       });
   }
 
+  filteredAndSortedProducts(): ProductResponse[] {
+    let list = [...this.products()];
+    if (this.selectedCategory !== null) {
+      list = list.filter((p) => p.category_id === this.selectedCategory);
+    }
+
+    list.sort((a, b) => {
+      let valA: any = a[this.sortField];
+      let valB: any = b[this.sortField];
+      if (typeof valA === 'string') {
+        return this.sortOrder === 'asc'
+          ? valA.localeCompare(valB)
+          : valB.localeCompare(valA);
+      }
+      return this.sortOrder === 'asc' ? valA - valB : valB - valA;
+    });
+
+    return list;
+  }
+
+  toggleSort(field: 'name' | 'sku' | 'selling_price' | 'min_stock'): void {
+    if (this.sortField === field) {
+      this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortField = field;
+      this.sortOrder = 'asc';
+    }
+  }
+
   paginatedProducts(): ProductResponse[] {
-    const start = (this.currentPage() - 1) * this.pageSize;
-    const end = start + this.pageSize;
-    return this.products().slice(start, end);
+    const list = this.filteredAndSortedProducts();
+    const start = (this.currentPage() - 1) * this.pageSize();
+    const end = start + this.pageSize();
+    return list.slice(start, end);
   }
 
-  totalPages(): number {
-    return Math.ceil(this.products().length / this.pageSize) || 1;
+  onPageChange(page: number): void {
+    this.currentPage.set(page);
   }
 
-  prevPage(): void {
-    if (this.currentPage() > 1) this.currentPage.set(this.currentPage() - 1);
-  }
-
-  nextPage(): void {
-    if (this.currentPage() < this.totalPages()) this.currentPage.set(this.currentPage() + 1);
+  onPageSizeChange(size: number): void {
+    this.pageSize.set(size);
+    this.currentPage.set(1);
   }
 
   getCategoryName(id: number | null): string {
@@ -160,9 +206,9 @@ export class Products implements OnInit {
     this.formModel = {
       sku: '',
       name: '',
-      cost_price: '0',
-      selling_price: '0',
-      min_stock: '0',
+      cost_price: 0,
+      selling_price: 0,
+      min_stock: 0,
       category_id: null,
       unit_id: this.units()[0]?.id ?? 0,
     };
@@ -175,9 +221,9 @@ export class Products implements OnInit {
     this.formModel = {
       sku: p.sku,
       name: p.name,
-      cost_price: String(p.cost_price),
-      selling_price: String(p.selling_price),
-      min_stock: String(p.min_stock),
+      cost_price: Number(p.cost_price),
+      selling_price: Number(p.selling_price),
+      min_stock: Number(p.min_stock),
       category_id: p.category_id ?? null,
       unit_id: p.unit_id,
     };
@@ -210,11 +256,11 @@ export class Products implements OnInit {
         this.formModel.category_id = cat.id;
         this.quickActionLoading.set(false);
         this.showQuickCategoryModal.set(false);
-        this.showToast(`Kategori "${cat.name}" berhasil dibuat dan dipilih.`);
+        this.toast.success(`Kategori "${cat.name}" berhasil dibuat dan dipilih.`);
       },
       error: (err) => {
         this.quickActionLoading.set(false);
-        this.error.set(err.error?.detail || 'Gagal menambahkan kategori');
+        this.toast.error(err.error?.detail || 'Gagal menambahkan kategori');
       },
     });
   }
@@ -247,11 +293,11 @@ export class Products implements OnInit {
           this.formModel.unit_id = un.id;
           this.quickActionLoading.set(false);
           this.showQuickUnitModal.set(false);
-          this.showToast(`Satuan "${un.name} (${un.symbol})" berhasil dibuat dan dipilih.`);
+          this.toast.success(`Satuan "${un.name} (${un.symbol})" berhasil dibuat.`);
         },
         error: (err) => {
           this.quickActionLoading.set(false);
-          this.error.set(err.error?.detail || 'Gagal menambahkan satuan');
+          this.toast.error(err.error?.detail || 'Gagal menambahkan satuan');
         },
       });
   }
@@ -274,18 +320,18 @@ export class Products implements OnInit {
         next: () => {
           this.showModal.set(false);
           this.fetchData();
-          this.showToast('Perubahan produk berhasil disimpan');
+          this.toast.success('Perubahan produk berhasil disimpan');
         },
-        error: (err) => this.error.set(err.error?.detail || 'Gagal mengubah produk'),
+        error: (err) => this.toast.error(err.error?.detail || 'Gagal mengubah produk'),
       });
     } else {
       this.inventory.createProduct(payload, headers).subscribe({
         next: () => {
           this.showModal.set(false);
           this.fetchData();
-          this.showToast('Produk baru berhasil ditambahkan');
+          this.toast.success('Produk baru berhasil ditambahkan');
         },
-        error: (err) => this.error.set(err.error?.detail || 'Gagal menambah produk'),
+        error: (err) => this.toast.error(err.error?.detail || 'Gagal menambah produk'),
       });
     }
   }
@@ -313,21 +359,18 @@ export class Products implements OnInit {
         this.showConfirmDelete.set(false);
         this.productToDelete.set(null);
         this.fetchData();
-        this.showToast(`Produk "${p.name}" dinonaktifkan.`);
+        this.toast.success(`Produk "${p.name}" berhasil dinonaktifkan.`);
       },
       error: (err) => {
         this.deleteLoading.set(false);
         this.showConfirmDelete.set(false);
         this.productToDelete.set(null);
-        this.error.set(err.error?.detail || 'Gagal menonaktifkan');
+        this.toast.error(err.error?.detail || 'Gagal menonaktifkan produk');
       },
     });
   }
 
   private showToast(msg: string): void {
-    this.successMessage.set(msg);
-    setTimeout(() => {
-      this.successMessage.set(null);
-    }, 3500);
+    this.toast.info(msg);
   }
 }

@@ -1,15 +1,18 @@
 import { Component, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { AuthService } from '../../core/services/auth.service';
-import { DashboardService } from '../../core/services/dashboard.service';
-import { InventoryService } from '../../core/services/inventory.service';
-import type { DashboardSummaryResponse } from '../../core/models/dashboard.model';
-import type { InventoryAlertResponse, ProductResponse } from '../../core/models/inventory.model';
+import { AppIconComponent } from '@shared/components';
+import { MiniBarChartComponent } from '@shared/components';
+import { RupiahPipe } from '@shared/pipes';
+import { AuthService } from '@core/services';
+import { DashboardService } from '@core/services';
+import { InventoryService } from '@core/services';
+import type { DashboardSummaryResponse } from '@core/models';
+import type { InventoryAlertResponse, ProductResponse } from '@core/models';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [DecimalPipe],
+  imports: [AppIconComponent, MiniBarChartComponent, RupiahPipe],
   template: `
     <div class="dashboard">
       <div class="dashboard-header">
@@ -19,7 +22,7 @@ import type { InventoryAlertResponse, ProductResponse } from '../../core/models/
         </div>
         @if (orgName()) {
           <div class="org-pill">
-            <span class="pill-icon">🏢</span>
+            <app-icon name="building" [size]="16" />
             <span>{{ orgName() }}</span>
           </div>
         }
@@ -38,7 +41,7 @@ import type { InventoryAlertResponse, ProductResponse } from '../../core/models/
       } @else {
         <div class="cards">
           <div class="card card-primary">
-            <div class="card-icon-wrapper blue">📦</div>
+            <div class="card-icon-wrapper blue"><app-icon name="box" [size]="20" /></div>
             <div class="card-info">
               <span class="label">Produk Aktif</span>
               <span class="value">{{ summary()?.active_products ?? 0 }}</span>
@@ -46,7 +49,7 @@ import type { InventoryAlertResponse, ProductResponse } from '../../core/models/
             </div>
           </div>
           <div class="card card-danger" [class.highlight]="zeroStockCount() > 0">
-            <div class="card-icon-wrapper red">🚨</div>
+            <div class="card-icon-wrapper red"><app-icon name="alert-circle" [size]="20" /></div>
             <div class="card-info">
               <span class="label">Stok Habis</span>
               <span class="value" [class.danger-val]="zeroStockCount() > 0">{{ zeroStockCount() }}</span>
@@ -54,7 +57,7 @@ import type { InventoryAlertResponse, ProductResponse } from '../../core/models/
             </div>
           </div>
           <div class="card card-warning" [class.highlight]="belowMinCount() > 0">
-            <div class="card-icon-wrapper orange">⚠️</div>
+            <div class="card-icon-wrapper orange"><app-icon name="alert-triangle" [size]="20" /></div>
             <div class="card-info">
               <span class="label">Di Bawah Minimum</span>
               <span class="value" [class.warning-val]="belowMinCount() > 0">{{ belowMinCount() }}</span>
@@ -62,6 +65,23 @@ import type { InventoryAlertResponse, ProductResponse } from '../../core/models/
             </div>
           </div>
         </div>
+
+        
+          <!-- Charts Section -->
+          <div class="charts-grid">
+            <app-mini-bar-chart
+              title="Komposisi Kesehatan Stok"
+              subtitle="Rasio stok aman vs berisiko"
+              [data]="stockHealthChartData()"
+              defaultColor="#0284c7"
+            />
+            <app-mini-bar-chart
+              title="Perbandingan Finansial Bulan Ini"
+              subtitle="Omzet Penjualan vs Belanja Pengadaan"
+              [data]="financialChartData()"
+              defaultColor="#10b981"
+            />
+          </div>
 
         @if (alerts() && (zeroStockCount() > 0 || belowMinCount() > 0)) {
           <div class="alerts-container">
@@ -114,32 +134,32 @@ import type { InventoryAlertResponse, ProductResponse } from '../../core/models/
         @if (summary(); as s) {
           <h2 class="section-title">Ringkasan Penjualan & Pengadaan</h2>
           <div class="cards cards-wide">
-            <div class="card card-success">
-              <div class="card-icon-wrapper emerald">💰</div>
+            <div class="card card-wide-item card-success">
+              <div class="card-icon-wrapper emerald"><app-icon name="tag" [size]="20" /></div>
               <div class="card-info">
                 <span class="label">Omzet Hari Ini</span>
-                <span class="value">Rp {{ s.sales_total_today | number:'1.0-0' }}</span>
-                <span class="trend neutral">Penjualan terkonfirmasi hari ini</span>
+                <span class="value currency">{{ s.sales_total_today | rupiah }}</span>
+                <span class="trend neutral">Penjualan terkonfirmasi</span>
               </div>
             </div>
-            <div class="card card-success">
-              <div class="card-icon-wrapper emerald">📈</div>
+            <div class="card card-wide-item card-success">
+              <div class="card-icon-wrapper emerald"><app-icon name="arrow-up" [size]="20" /></div>
               <div class="card-info">
                 <span class="label">Omzet Bulan Ini</span>
-                <span class="value">Rp {{ s.sales_total_month | number:'1.0-0' }}</span>
-                <span class="trend neutral">Penjualan terkonfirmasi bulan ini</span>
+                <span class="value currency">{{ s.sales_total_month | rupiah }}</span>
+                <span class="trend neutral">Penjualan bulan berjalan</span>
               </div>
             </div>
-            <div class="card card-primary">
-              <div class="card-icon-wrapper purple">🛒</div>
+            <div class="card card-wide-item card-primary">
+              <div class="card-icon-wrapper purple"><app-icon name="shopping-bag" [size]="20" /></div>
               <div class="card-info">
                 <span class="label">Belanja Pengadaan</span>
-                <span class="value">Rp {{ s.purchase_total_month | number:'1.0-0' }}</span>
+                <span class="value currency">{{ s.purchase_total_month | rupiah }}</span>
                 <span class="trend neutral">Total PO bulan ini</span>
               </div>
             </div>
-            <div class="card card-warning">
-              <div class="card-icon-wrapper orange">🧾</div>
+            <div class="card card-wide-item card-warning">
+              <div class="card-icon-wrapper orange"><app-icon name="shopping-cart" [size]="20" /></div>
               <div class="card-info">
                 <span class="label">Order Penjualan Aktif</span>
                 <span class="value">{{ s.active_sales_orders }}</span>
@@ -152,6 +172,65 @@ import type { InventoryAlertResponse, ProductResponse } from '../../core/models/
     </div>
   `,
   styles: [`
+    .quick-action-bar {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      padding: 0.875rem 1.25rem;
+      border-radius: 0.75rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .quick-action-label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #475569;
+    }
+    .action-buttons {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .quick-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.875rem;
+      border-radius: 0.5rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      cursor: pointer;
+
+      &.primary {
+        background: #0284c7;
+        color: #ffffff;
+        &:hover {
+          background: #0369a1;
+        }
+      }
+
+      &.secondary {
+        background: #f1f5f9;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+        &:hover {
+          background: #e2e8f0;
+          color: #0f172a;
+        }
+      }
+    }
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
     .section-title {
       font-size: 1.05rem;
       font-weight: 700;
@@ -160,15 +239,33 @@ import type { InventoryAlertResponse, ProductResponse } from '../../core/models/
     }
 
     .cards.cards-wide {
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card-wide-item {
+      padding: 1.15rem 1.25rem;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .card .value.currency {
+      font-size: 1.25rem;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: -0.01em;
     }
 
     .card-icon-wrapper.emerald {
       background: #d1fae5;
+      color: #059669;
     }
 
     .card-icon-wrapper.purple {
       background: #ede9fe;
+      color: #7c3aed;
     }
 
     .dashboard {
@@ -459,12 +556,20 @@ import type { InventoryAlertResponse, ProductResponse } from '../../core/models/
     }
     
     /* Responsive */
+    @media (max-width: 1200px) {
+      .cards.cards-wide {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
     @media (max-width: 1023px) {
       .cards { grid-template-columns: repeat(2, 1fr); }
+      .cards.cards-wide { grid-template-columns: repeat(2, 1fr); }
     }
     
     @media (max-width: 640px) {
       .cards { grid-template-columns: 1fr; }
+      .cards.cards-wide { grid-template-columns: 1fr; }
       .dashboard-header { flex-direction: column; }
     }
   `],
@@ -531,6 +636,27 @@ export class Dashboard {
       },
     });
   }
+
+  
+  stockHealthChartData = () => {
+    const total = this.summary()?.active_products || 0;
+    const zero = this.zeroStockCount();
+    const below = this.belowMinCount();
+    const safe = Math.max(0, total - zero - below);
+    return [
+      { label: 'Stok Aman', value: safe, color: '#10b981' },
+      { label: 'Menipis', value: below, color: '#f59e0b' },
+      { label: 'Habis (0)', value: zero, color: '#ef4444' }
+    ];
+  };
+
+  financialChartData = () => {
+    const s = this.summary();
+    return [
+      { label: 'Penjualan', value: s?.sales_total_month || 0, color: '#10b981' },
+      { label: 'Pengadaan', value: s?.purchase_total_month || 0, color: '#8b5cf6' }
+    ];
+  };
 
   productCount = () => this.products().length;
   zeroStockCount = () => this.alerts()?.zero_stock.length ?? 0;

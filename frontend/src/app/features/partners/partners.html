@@ -191,9 +191,11 @@
           <div class="form-group">
             <label>Nomor Telepon / WhatsApp</label>
             <input
-              type="text"
+              type="tel"
+              inputmode="numeric" pattern="[0-9]*"
               class="form-control"
               [(ngModel)]="formModel.phone"
+              (input)="onPhoneInput($event)"
               placeholder="08123456789"
             />
           </div>
