@@ -9,12 +9,13 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.routers import auth, dashboard, debug, inventory, organizations, partners, purchases, sales
+from app.__version__ import __version__
 
 load_dotenv()
 
 APP_NAME = os.getenv("APP_NAME", "StokSaku ERP")
 APP_ENV = os.getenv("APP_ENV", "development")
-API_VERSION = os.getenv("API_VERSION", "0.1.0")
+API_VERSION = os.getenv("API_VERSION", __version__)
 
 _allowed_origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
 if APP_ENV == "production" and settings.jwt_secret_key == "stocksaku-secret-key-change-in-production":
