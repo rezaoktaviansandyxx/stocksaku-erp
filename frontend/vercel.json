@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputPath": "dist/frontend",
   "rewrites": [
     {
       "source": "/(.*)",
