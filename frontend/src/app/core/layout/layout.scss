@@ -19,7 +19,7 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  z-index: 1001;
+  z-index: var(--z-sidebar);
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
 }
@@ -312,7 +312,7 @@
     height: 100vh;
     transform: translateX(-100%);
     width: 270px;
-    z-index: 1001;
+    z-index: var(--z-sidebar);
   }
 
   .sidebar.open {
@@ -373,7 +373,7 @@
     opacity: 0;
     visibility: hidden;
     transition: all 0.3s ease;
-    z-index: 1000;
+    z-index: var(--z-sidebar-overlay);
   }
 
   .overlay.show {

@@ -641,13 +641,13 @@ textarea.form-control {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: var(--z-modal-backdrop, 2000);
   padding: 1rem;
   box-sizing: border-box;
 }
 
 .modal-quick-overlay {
-  z-index: 1100;
+  z-index: var(--z-modal-sub, 2100);
 }
 
 .modal {
@@ -655,7 +655,8 @@ textarea.form-control {
   border-radius: 16px;
   width: 100%;
   max-width: 620px;
-  max-height: 90vh;
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100dvh - 2rem);
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);

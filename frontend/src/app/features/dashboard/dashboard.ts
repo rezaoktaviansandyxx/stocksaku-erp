@@ -77,7 +77,7 @@ import type { InventoryAlertResponse, ProductResponse } from '@core/models';
             />
             <app-mini-bar-chart
               title="Perbandingan Finansial Bulan Ini"
-              subtitle="Omzet Penjualan vs Belanja Pengadaan"
+              subtitle="Omzet Penjualan vs Total Pembelian"
               [data]="financialChartData()"
               defaultColor="#10b981"
             />
@@ -95,7 +95,7 @@ import type { InventoryAlertResponse, ProductResponse } from '@core/models';
                 <div class="alert-box alert-box-danger">
                   <div class="box-title">
                     <span class="indicator red"></span>
-                    <h3>Stok Habis (0 Unit)</h3>
+                    <h3>Stok Habis</h3>
                   </div>
                   <div class="alert-list">
                     @for (p of alerts()?.zero_stock; track p.product_id) {
@@ -132,7 +132,7 @@ import type { InventoryAlertResponse, ProductResponse } from '@core/models';
         }
 
         @if (summary(); as s) {
-          <h2 class="section-title">Ringkasan Penjualan & Pengadaan</h2>
+          <h2 class="section-title">Ringkasan Penjualan & Pembelian</h2>
           <div class="cards cards-wide">
             <div class="card card-wide-item card-success">
               <div class="card-icon-wrapper emerald"><app-icon name="tag" [size]="20" /></div>
@@ -153,7 +153,7 @@ import type { InventoryAlertResponse, ProductResponse } from '@core/models';
             <div class="card card-wide-item card-primary">
               <div class="card-icon-wrapper purple"><app-icon name="shopping-bag" [size]="20" /></div>
               <div class="card-info">
-                <span class="label">Belanja Pengadaan</span>
+                <span class="label">Total Pembelian</span>
                 <span class="value currency">{{ s.purchase_total_month | rupiah }}</span>
                 <span class="trend neutral">Total PO bulan ini</span>
               </div>
@@ -232,29 +232,56 @@ import type { InventoryAlertResponse, ProductResponse } from '@core/models';
     }
 
     .section-title {
-      font-size: 1.05rem;
+      font-size: 1.15rem;
       font-weight: 700;
       color: var(--color-text);
       margin-top: 0.5rem;
     }
 
     .cards.cards-wide {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(2, 1fr);
       gap: 1.25rem;
     }
 
     .card-wide-item {
-      padding: 1.15rem 1.25rem;
-      gap: 1rem;
+      padding: 1.35rem 1.5rem;
+      gap: 1.25rem;
       align-items: center;
+      min-width: 0;
+    }
+
+    .card-wide-item .card-info {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .card-wide-item .label {
+      font-size: 0.825rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+    }
+
+    .card-wide-item .value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--color-text);
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    .card-wide-item .trend {
+      font-size: 0.825rem;
+      color: var(--color-text-muted);
+      margin-top: 0.15rem;
     }
 
     .card .value.currency {
-      font-size: 1.25rem;
-      font-weight: 700;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
       letter-spacing: -0.01em;
     }
 
@@ -646,7 +673,7 @@ export class Dashboard {
     return [
       { label: 'Stok Aman', value: safe, color: '#10b981' },
       { label: 'Menipis', value: below, color: '#f59e0b' },
-      { label: 'Habis (0)', value: zero, color: '#ef4444' }
+      { label: 'Habis', value: zero, color: '#ef4444' }
     ];
   };
 
@@ -654,7 +681,7 @@ export class Dashboard {
     const s = this.summary();
     return [
       { label: 'Penjualan', value: s?.sales_total_month || 0, color: '#10b981' },
-      { label: 'Pengadaan', value: s?.purchase_total_month || 0, color: '#8b5cf6' }
+      { label: 'Pembelian', value: s?.purchase_total_month || 0, color: '#8b5cf6' }
     ];
   };
 
