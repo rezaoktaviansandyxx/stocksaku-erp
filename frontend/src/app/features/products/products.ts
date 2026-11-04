@@ -5,6 +5,7 @@ import { ConfirmDialog } from '@shared/components';
 import { AppIconComponent } from '@shared/components';
 import { AppBadgeComponent } from '@shared/components';
 import { PaginationComponent } from '@shared/components';
+import { BarcodeScannerComponent } from '@shared/components';
 import { RupiahPipe } from '@shared/pipes';
 import { NumberFormatDirective } from '@shared/directives';
 import { AuthService } from '@core/services';
@@ -36,6 +37,7 @@ interface ProductForm {
     AppIconComponent,
     AppBadgeComponent,
     PaginationComponent,
+    BarcodeScannerComponent,
     RupiahPipe,
     NumberFormatDirective
   ],
@@ -90,6 +92,10 @@ export class Products implements OnInit {
   deleteLoading = signal(false);
 
   quickActionLoading = signal(false);
+
+  // Barcode Scanner Modal
+  showScanner = signal(false);
+  scannerTarget: 'search' | 'sku' = 'search';
 
   ngOnInit(): void {
     this.fetchData();
@@ -368,6 +374,26 @@ export class Products implements OnInit {
         this.toast.error(err.error?.detail || 'Gagal menonaktifkan produk');
       },
     });
+  }
+
+  openScanner(target: 'search' | 'sku'): void {
+    this.scannerTarget = target;
+    this.showScanner.set(true);
+  }
+
+  closeScanner(): void {
+    this.showScanner.set(false);
+  }
+
+  handleBarcodeScanned(code: string): void {
+    if (this.scannerTarget === 'sku') {
+      this.formModel.sku = code;
+      this.toast.success(`Barcode berhasil dipindai: ${code}`);
+    } else {
+      this.searchTerm = code;
+      this.applyFilter();
+      this.toast.info(`Mencari produk barcode: ${code}`);
+    }
   }
 
   private showToast(msg: string): void {
