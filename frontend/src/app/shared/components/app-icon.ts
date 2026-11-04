@@ -23,7 +23,10 @@ export type IconName =
   | 'arrow-down'
   | 'chevron-left'
   | 'chevron-right'
-  | 'filter';
+  | 'filter'
+  | 'camera'
+  | 'barcode'
+  | 'x';
 
 @Component({
   selector: 'app-icon',
@@ -151,6 +154,17 @@ export type IconName =
         }
         @case ('filter') {
           <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+        }
+        @case ('camera') {
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        }
+        @case ('barcode') {
+          <path d="M3 5v14M8 5v14M12 5v14M17 5v14M21 5v14"/>
+        }
+        @case ('x') {
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
         }
       }
     </svg>

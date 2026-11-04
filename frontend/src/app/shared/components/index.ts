@@ -4,3 +4,4 @@ export * from './confirm-dialog';
 export * from './mini-bar-chart';
 export * from './pagination';
 export * from './toast-container';
+export * from './barcode-scanner';
