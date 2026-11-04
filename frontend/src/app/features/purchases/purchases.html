@@ -3,7 +3,7 @@
   <div class="header-actions">
     <div>
       <h2 class="section-title">Pesanan Pembelian (Purchase Orders)</h2>
-      <p class="section-subtitle">Kelola pengadaan barang dari supplier dan penerimaan inventaris.</p>
+      <p class="section-subtitle">Kelola pembelian barang dari supplier dan penerimaan inventaris.</p>
     </div>
     <button class="btn btn-primary" (click)="openCreateModal()">
       <span class="btn-icon">＋</span> Tambah PO Baru
@@ -59,7 +59,7 @@
       <div class="state-container empty-state">
         <span class="empty-icon">📦</span>
         <h3>Belum ada pesanan pembelian</h3>
-        <p>Buat pesanan pembelian pertama Anda untuk memulai pengadaan barang ke inventaris.</p>
+        <p>Buat pesanan pembelian pertama Anda untuk memulai pembelian barang ke inventaris.</p>
         <button class="btn btn-outline" (click)="openCreateModal()">Buat Pesanan Pembelian</button>
       </div>
     } @else {
@@ -147,8 +147,13 @@
     <div class="modal-backdrop" (click)="closeCreateModal()">
       <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <h3>Buat Pesanan Pembelian (PO)</h3>
-          <button class="btn-close" (click)="closeCreateModal()">✕</button>
+          <div class="modal-header-text">
+            <h3>Buat Pesanan Pembelian (PO)</h3>
+            <p class="modal-subtitle">Pilih supplier, gudang tujuan, dan masukkan rincian barang yang dibeli.</p>
+          </div>
+          <button type="button" class="btn-close" (click)="closeCreateModal()" aria-label="Tutup">
+            <app-icon name="x" [size]="18" />
+          </button>
         </div>
 
         <form (ngSubmit)="submitCreate()">
@@ -156,93 +161,134 @@
             <div class="form-row">
               <div class="form-group flex-1">
                 <label>Supplier <span class="required">*</span></label>
-                <select [(ngModel)]="newPo.supplier_id" name="supplier_id" required>
-                  <option [ngValue]="null" disabled selected>Pilih Supplier</option>
-                  @for (s of suppliers(); track s.id) {
-                    <option [ngValue]="s.id">{{ s.name }}</option>
-                  }
-                </select>
+                <div class="select-wrapper">
+                  <select [(ngModel)]="newPo.supplier_id" name="supplier_id" required>
+                    <option [ngValue]="null" disabled selected>Pilih Supplier...</option>
+                    @for (s of suppliers(); track s.id) {
+                      <option [ngValue]="s.id">{{ s.name }}</option>
+                    }
+                  </select>
+                </div>
               </div>
 
               <div class="form-group flex-1">
                 <label>Gudang Tujuan</label>
-                <select [(ngModel)]="newPo.warehouse_id" name="warehouse_id">
-                  <option [ngValue]="null">Default / Otomatis</option>
-                  @for (w of warehouses(); track w.id) {
-                    <option [ngValue]="w.id">{{ w.name }}</option>
-                  }
-                </select>
+                <div class="select-wrapper">
+                  <select [(ngModel)]="newPo.warehouse_id" name="warehouse_id">
+                    <option [ngValue]="null">Gudang Utama (Otomatis)</option>
+                    @for (w of warehouses(); track w.id) {
+                      <option [ngValue]="w.id">{{ w.name }}</option>
+                    }
+                  </select>
+                </div>
               </div>
             </div>
 
             <div class="form-group">
-              <label>Catatan</label>
-              <input type="text" [(ngModel)]="newPo.notes" name="notes" placeholder="Catatan opsional..." />
+              <label>Catatan Pesanan</label>
+              <input type="text" [(ngModel)]="newPo.notes" name="notes" placeholder="Contoh: Pengiriman via ekspedisi / termin 30 hari..." />
             </div>
 
             <!-- Items Dynamic Table -->
             <div class="items-section">
               <div class="items-header">
-                <h4>Daftar Barang</h4>
-                <button type="button" class="btn btn-sm btn-outline" (click)="addItemRow()">+ Tambah Baris</button>
+                <div>
+                  <h4>Daftar Barang</h4>
+                  <span class="items-header-hint">Pilih produk dan masukkan kuantitas serta harga beli</span>
+                </div>
+                <div class="items-header-actions">
+                  <button type="button" class="btn-scan" (click)="openScanner()">
+                    <app-icon name="camera" [size]="14" /> Scan Barcode
+                  </button>
+                  <button type="button" class="btn-add-item" (click)="addItemRow()">
+                    <app-icon name="plus" [size]="14" /> Tambah Baris
+                  </button>
+                </div>
               </div>
 
-              <table class="items-table">
-                <thead>
-                  <tr>
-                    <th style="width: 45%;">Produk <span class="required">*</span></th>
-                    <th style="width: 20%;">Jumlah <span class="required">*</span></th>
-                    <th style="width: 25%;">Harga Beli Satuan <span class="required">*</span></th>
-                    <th style="width: 10%;">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (row of poItemRows; track $index) {
+              <div class="items-table-container">
+                <table class="items-table">
+                  <thead>
                     <tr>
-                      <td>
-                        <input
-                          type="text"
-                          [name]="'product_search_' + $index"
-                          list="po_products_datalist"
-                          [ngModel]="row.product_name"
-                          (input)="onProductSearchInput(row, $event)"
-                          placeholder="Cari nama atau SKU produk..."
-                          required
-                          autocomplete="off"
-                        />
-                        <datalist id="po_products_datalist">
-                          @for (p of products(); track p.id) {
-                            <option [value]="p.name + ' (' + p.sku + ')'"></option>
-                          }
-                        </datalist>
-                      </td>
-                      <td>
-                        <input type="text" inputmode="numeric" pattern="[0-9]*" appNumberFormat [(ngModel)]="row.quantity" [name]="'qty_' + $index" placeholder="0" required />
-                      </td>
-                      <td>
-                        <input type="text" inputmode="numeric" pattern="[0-9]*" appNumberFormat [(ngModel)]="row.unit_cost" [name]="'cost_' + $index" placeholder="0" required />
-                      </td>
-                      <td>
-                        @if (poItemRows.length > 1) {
-                          <button type="button" class="btn-delete-row" (click)="removeItemRow($index)">Hapus</button>
-                        }
-                      </td>
+                      <th class="col-prod">Produk <span class="required">*</span></th>
+                      <th class="col-qty">Jumlah <span class="required">*</span></th>
+                      <th class="col-price">Harga Beli Satuan <span class="required">*</span></th>
+                      <th class="col-subtotal">Subtotal</th>
+                      <th class="col-action"></th>
                     </tr>
-                  }
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    @for (row of poItemRows; track $index) {
+                      <tr>
+                        <td class="col-prod">
+                          <div class="input-search-prod">
+                            <input
+                              type="text"
+                              [name]="'product_search_' + $index"
+                              list="po_products_datalist"
+                              [ngModel]="row.product_name"
+                              (input)="onProductSearchInput(row, $event)"
+                              placeholder="Cari nama atau ketik SKU..."
+                              required
+                              autocomplete="off"
+                            />
+                            <datalist id="po_products_datalist">
+                              @for (p of products(); track p.id) {
+                                <option [value]="p.name + ' (' + p.sku + ')'"></option>
+                              }
+                            </datalist>
+                          </div>
+                        </td>
+                        <td class="col-qty">
+                          <input type="text" inputmode="numeric" pattern="[0-9]*" appNumberFormat [(ngModel)]="row.quantity" [name]="'qty_' + $index" placeholder="1" required />
+                        </td>
+                        <td class="col-price">
+                          <div class="input-prefix-wrapper">
+                            <span class="input-prefix">Rp</span>
+                            <input type="text" inputmode="numeric" pattern="[0-9]*" appNumberFormat [(ngModel)]="row.unit_cost" [name]="'cost_' + $index" placeholder="0" required />
+                          </div>
+                        </td>
+                        <td class="col-subtotal font-semibold">
+                          {{ formatCurrency((row.quantity || 0) * (row.unit_cost || 0)) }}
+                        </td>
+                        <td class="col-action">
+                          <button type="button" class="btn-delete-row" (click)="removeItemRow($index)" title="Hapus baris">
+                            <app-icon name="trash" [size]="15" />
+                          </button>
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="5" class="empty-items-cell">
+                          <div class="empty-items-box">
+                            <span class="empty-items-icon">📦</span>
+                            <p>Belum ada produk yang ditambahkan</p>
+                            <small>Klik tombol <strong>+ Tambah Baris</strong> di atas atau gunakan <strong>Scan Barcode</strong></small>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
 
-              <div class="order-total-summary">
-                <span>Total Estimasi:</span>
-                <span class="total-amount">{{ formatCurrency(calculateEstimatedTotal()) }}</span>
+              <div class="order-summary-box">
+                <div class="summary-line">
+                  <span class="summary-label">Total Item:</span>
+                  <span class="summary-count">{{ poItemRows.length }} jenis barang</span>
+                </div>
+                <div class="summary-line highlight">
+                  <span class="summary-label">Total Estimasi Pembelian:</span>
+                  <span class="summary-total">{{ formatCurrency(calculateEstimatedTotal()) }}</span>
+                </div>
               </div>
             </div>
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-outline" (click)="closeCreateModal()">Batal</button>
-            <button type="submit" class="btn btn-primary" [disabled]="submitting()">
-              {{ submitting() ? 'Menyimpan...' : 'Buat Pesanan' }}
+            <button type="button" class="btn btn-secondary" (click)="closeCreateModal()">Batal</button>
+            <button type="submit" class="btn btn-primary" [disabled]="submitting() || poItemRows.length === 0">
+              {{ submitting() ? 'Menyimpan...' : 'Buat Pesanan (PO)' }}
             </button>
           </div>
         </form>
@@ -384,4 +430,12 @@
     (confirmed)="closeAlertDialog()"
     (cancelled)="closeAlertDialog()"
   ></app-confirm-dialog>
+
+  <!-- Barcode Scanner Modal -->
+  <app-barcode-scanner
+    [isOpen]="showScanner()"
+    title="Scan Barcode Produk Pembelian"
+    (scanned)="handleBarcodeScanned($event)"
+    (closed)="closeScanner()"
+  ></app-barcode-scanner>
 </div>

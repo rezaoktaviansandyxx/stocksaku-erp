@@ -5,7 +5,7 @@ import { PurchaseService } from '@core/services';
 import { SupplierService } from '@core/services';
 import { InventoryService } from '@core/services';
 import { AuthService } from '@core/services';
-import { ConfirmDialog } from '@shared/components';
+import { BarcodeScannerComponent, ConfirmDialog, AppIconComponent } from '@shared/components';
 import { NumberFormatDirective } from '@shared/directives';
 import type {
   PurchaseOrderResponse,
@@ -25,7 +25,14 @@ interface ItemRow {
 @Component({
   selector: 'app-purchases',
   standalone: true,
-  imports: [CommonModule, FormsModule, ConfirmDialog, NumberFormatDirective],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ConfirmDialog,
+    NumberFormatDirective,
+    BarcodeScannerComponent,
+    AppIconComponent,
+  ],
   templateUrl: './purchases.html',
   styleUrl: './purchases.scss',
 })
@@ -46,6 +53,7 @@ export class Purchases implements OnInit {
 
   // Modals
   showCreateModal = signal(false);
+  showScanner = signal(false);
   selectedPo = signal<PurchaseOrderResponse | null>(null);
   poToReceive = signal<PurchaseOrderResponse | null>(null);
 
@@ -140,20 +148,57 @@ export class Purchases implements OnInit {
       warehouse_id: this.warehouses().length > 0 ? this.warehouses()[0].id : null,
       notes: '',
     };
-    const firstProd = this.products().length > 0 ? this.products()[0] : null;
-    this.poItemRows = [
-      {
-        product_id: firstProd ? firstProd.id : null,
-        product_name: firstProd ? `${firstProd.name} (${firstProd.sku})` : '',
-        quantity: 1,
-        unit_cost: firstProd ? Number(firstProd.cost_price) : 0,
-      },
-    ];
+    this.poItemRows = [];
     this.showCreateModal.set(true);
   }
 
   closeCreateModal(): void {
     this.showCreateModal.set(false);
+  }
+
+  // Barcode Scanner Handlers
+  openScanner(): void {
+    this.showScanner.set(true);
+  }
+
+  closeScanner(): void {
+    this.showScanner.set(false);
+  }
+
+  handleBarcodeScanned(barcode: string): void {
+    const code = barcode.trim().toLowerCase();
+    const matched = this.products().find(
+      (p) => p.sku.toLowerCase() === code || (p as unknown as { barcode?: string }).barcode?.toLowerCase() === code
+    );
+
+    if (!matched) {
+      this.errorMessage.set(`Produk dengan barcode/SKU "${barcode}" tidak ditemukan.`);
+      setTimeout(() => this.errorMessage.set(null), 4000);
+      return;
+    }
+
+    const existingIndex = this.poItemRows.findIndex((r) => r.product_id === matched.id);
+
+    if (existingIndex >= 0) {
+      this.poItemRows[existingIndex].quantity += 1;
+    } else {
+      if (this.poItemRows.length === 1 && !this.poItemRows[0].product_id) {
+        this.poItemRows[0].product_id = matched.id;
+        this.poItemRows[0].product_name = `${matched.name} (${matched.sku})`;
+        this.poItemRows[0].quantity = 1;
+        this.poItemRows[0].unit_cost = Number(matched.cost_price);
+      } else {
+        this.poItemRows.push({
+          product_id: matched.id,
+          product_name: `${matched.name} (${matched.sku})`,
+          quantity: 1,
+          unit_cost: Number(matched.cost_price),
+        });
+      }
+    }
+
+    this.successMessage.set(`"${matched.name}" berhasil ditambahkan via barcode!`);
+    setTimeout(() => this.successMessage.set(null), 3000);
   }
 
   addItemRow(): void {
