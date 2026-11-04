@@ -135,8 +135,13 @@
     <div class="modal-backdrop" (click)="closeCreateModal()">
       <div class="modal-card modal-lg" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <h3>Buat Pesanan Penjualan (SO)</h3>
-          <button class="btn-close" (click)="closeCreateModal()">✕</button>
+          <div class="modal-header-text">
+            <h3>Buat Pesanan Penjualan (SO)</h3>
+            <p class="modal-subtitle">Pilih pelanggan, gudang sumber pengeluaran stok, dan rincian produk yang dijual.</p>
+          </div>
+          <button type="button" class="btn-close" (click)="closeCreateModal()" aria-label="Tutup">
+            <app-icon name="x" [size]="18" />
+          </button>
         </div>
 
         <form (ngSubmit)="submitCreate()">
@@ -144,118 +149,161 @@
             <div class="form-row">
               <div class="form-group flex-1">
                 <label>Pelanggan</label>
-                <select [(ngModel)]="newSo.customer_id" name="customer_id">
-                  <option [ngValue]="null">Umum (tanpa pelanggan)</option>
-                  @for (c of customers(); track c.id) {
-                    <option [ngValue]="c.id">{{ c.name }}</option>
-                  }
-                </select>
+                <div class="select-wrapper">
+                  <select [(ngModel)]="newSo.customer_id" name="customer_id">
+                    <option [ngValue]="null">Umum (Pelanggan Langsung / Non-Member)</option>
+                    @for (c of customers(); track c.id) {
+                      <option [ngValue]="c.id">{{ c.name }}</option>
+                    }
+                  </select>
+                </div>
               </div>
 
               <div class="form-group flex-1">
                 <label>Gudang Sumber <span class="required">*</span></label>
-                <select [(ngModel)]="newSo.warehouse_id" name="warehouse_id" (change)="onWarehouseChanged()" required>
-                  @for (w of warehouses(); track w.id) {
-                    <option [ngValue]="w.id">{{ w.name }}</option>
-                  }
-                </select>
+                <div class="select-wrapper">
+                  <select [(ngModel)]="newSo.warehouse_id" name="warehouse_id" (change)="onWarehouseChanged()" required>
+                    @for (w of warehouses(); track w.id) {
+                      <option [ngValue]="w.id">{{ w.name }}</option>
+                    }
+                  </select>
+                </div>
               </div>
             </div>
 
             <div class="form-group">
-              <label>Catatan</label>
-              <input type="text" [(ngModel)]="newSo.notes" name="notes" placeholder="Catatan opsional..." />
+              <label>Catatan Penjualan</label>
+              <input type="text" [(ngModel)]="newSo.notes" name="notes" placeholder="Contoh: Pesanan online / titip kasir / tempo 7 hari..." />
             </div>
 
             <div class="items-section">
               <div class="items-header">
-                <h4>Daftar Barang</h4>
-                <button type="button" class="btn btn-sm btn-outline" (click)="addItemRow()">+ Tambah Baris</button>
+                <div>
+                  <h4>Daftar Barang</h4>
+                  <span class="items-header-hint">Pilih produk, pantau stok tersedia gudang, dan atur harga jual</span>
+                </div>
+                <div class="items-header-actions">
+                  <button type="button" class="btn-scan" (click)="openScanner()">
+                    <app-icon name="camera" [size]="14" /> Scan Barcode
+                  </button>
+                  <button type="button" class="btn-add-item" (click)="addItemRow()">
+                    <app-icon name="plus" [size]="14" /> Tambah Baris
+                  </button>
+                </div>
               </div>
 
-              <table class="items-table">
-                <thead>
-                  <tr>
-                    <th style="width: 35%;">Produk <span class="required">*</span></th>
-                    <th style="width: 15%;">Stok Tersedia</th>
-                    <th style="width: 15%;">Jumlah <span class="required">*</span></th>
-                    <th style="width: 20%;">Harga Jual Satuan <span class="required">*</span></th>
-                    <th style="width: 10%;">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (row of soItemRows; track $index) {
+              <div class="items-table-container">
+                <table class="items-table">
+                  <thead>
                     <tr>
-                      <td>
-                        <input
-                          type="text"
-                          [name]="'product_search_' + $index"
-                          list="products_datalist"
-                          [ngModel]="row.product_name"
-                          (input)="onProductSearchInput(row, $event)"
-                          placeholder="Cari nama atau SKU produk..."
-                          required
-                          autocomplete="off"
-                        />
-                        <datalist id="products_datalist">
-                          @for (p of products(); track p.id) {
-                            <option [value]="p.name + ' (' + p.sku + ')'"></option>
-                          }
-                        </datalist>
-                      </td>
-                      <td class="stock-cell">
-                        @if (row.available === null) {
-                          <span class="muted">-</span>
-                        } @else {
-                          <span [class.stock-low]="isOverStock(row)">{{ row.available }}</span>
-                        }
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          inputmode="numeric" pattern="[0-9]*"
-                          appNumberFormat
-                          [(ngModel)]="row.quantity"
-                          [name]="'qty_' + $index"
-                          placeholder="0"
-                          required
-                        />
-                        @if (isOverStock(row)) {
-                          <small class="stock-warning">Melebihi stok</small>
-                        }
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          inputmode="numeric" pattern="[0-9]*"
-                          appNumberFormat
-                          [(ngModel)]="row.unit_price"
-                          [name]="'price_' + $index"
-                          placeholder="0"
-                          required
-                        />
-                      </td>
-                      <td>
-                        @if (soItemRows.length > 1) {
-                          <button type="button" class="btn-delete-row" (click)="removeItemRow($index)">Hapus</button>
-                        }
-                      </td>
+                      <th class="col-prod">Produk <span class="required">*</span></th>
+                      <th class="col-avail">Stok Tersedia</th>
+                      <th class="col-qty">Jumlah <span class="required">*</span></th>
+                      <th class="col-price">Harga Jual Satuan <span class="required">*</span></th>
+                      <th class="col-subtotal">Subtotal</th>
+                      <th class="col-action"></th>
                     </tr>
-                  }
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    @for (row of soItemRows; track $index) {
+                      <tr>
+                        <td class="col-prod">
+                          <div class="input-search-prod">
+                            <input
+                              type="text"
+                              [name]="'product_search_' + $index"
+                              list="products_datalist"
+                              [ngModel]="row.product_name"
+                              (input)="onProductSearchInput(row, $event)"
+                              placeholder="Cari nama atau ketik SKU..."
+                              required
+                              autocomplete="off"
+                            />
+                            <datalist id="products_datalist">
+                              @for (p of products(); track p.id) {
+                                <option [value]="p.name + ' (' + p.sku + ')'"></option>
+                              }
+                            </datalist>
+                          </div>
+                        </td>
+                        <td class="col-avail">
+                          @if (row.available === null) {
+                            <span class="stock-pill stock-none">-</span>
+                          } @else {
+                            <span class="stock-pill" [class.stock-danger]="isOverStock(row)">
+                              {{ row.available }} unit
+                            </span>
+                          }
+                        </td>
+                        <td class="col-qty">
+                          <input
+                            type="text"
+                            inputmode="numeric" pattern="[0-9]*"
+                            appNumberFormat
+                            [(ngModel)]="row.quantity"
+                            [name]="'qty_' + $index"
+                            placeholder="1"
+                            required
+                          />
+                          @if (isOverStock(row)) {
+                            <small class="stock-warning">Melebihi stok gudang!</small>
+                          }
+                        </td>
+                        <td class="col-price">
+                          <div class="input-prefix-wrapper">
+                            <span class="input-prefix">Rp</span>
+                            <input
+                              type="text"
+                              inputmode="numeric" pattern="[0-9]*"
+                              appNumberFormat
+                              [(ngModel)]="row.unit_price"
+                              [name]="'price_' + $index"
+                              placeholder="0"
+                              required
+                            />
+                          </div>
+                        </td>
+                        <td class="col-subtotal font-semibold">
+                          {{ formatCurrency((row.quantity || 0) * (row.unit_price || 0)) }}
+                        </td>
+                        <td class="col-action">
+                          <button type="button" class="btn-delete-row" (click)="removeItemRow($index)" title="Hapus baris">
+                            <app-icon name="trash" [size]="15" />
+                          </button>
+                        </td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="6" class="empty-items-cell">
+                          <div class="empty-items-box">
+                            <span class="empty-items-icon">🧾</span>
+                            <p>Belum ada produk penjualan yang ditambahkan</p>
+                            <small>Klik tombol <strong>+ Tambah Baris</strong> di atas atau gunakan <strong>Scan Barcode</strong></small>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
 
-              <div class="order-total-summary">
-                <span>Total Estimasi:</span>
-                <span class="total-amount">{{ formatCurrency(calculateTotal()) }}</span>
+              <div class="order-summary-box">
+                <div class="summary-line">
+                  <span class="summary-label">Total Item:</span>
+                  <span class="summary-count">{{ soItemRows.length }} jenis produk</span>
+                </div>
+                <div class="summary-line highlight">
+                  <span class="summary-label">Total Nilai Penjualan:</span>
+                  <span class="summary-total">{{ formatCurrency(calculateTotal()) }}</span>
+                </div>
               </div>
             </div>
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-outline" (click)="closeCreateModal()">Batal</button>
-            <button type="submit" class="btn btn-primary" [disabled]="submitting()">
-              {{ submitting() ? 'Menyimpan...' : 'Simpan Draft' }}
+            <button type="button" class="btn btn-secondary" (click)="closeCreateModal()">Batal</button>
+            <button type="submit" class="btn btn-primary" [disabled]="submitting() || soItemRows.length === 0">
+              {{ submitting() ? 'Menyimpan...' : 'Simpan Penjualan (Draft)' }}
             </button>
           </div>
         </form>
@@ -419,4 +467,12 @@
     (confirmed)="closeAlertDialog()"
     (cancelled)="closeAlertDialog()"
   ></app-confirm-dialog>
+
+  <!-- Barcode Scanner Modal -->
+  <app-barcode-scanner
+    [isOpen]="showScanner()"
+    title="Scan Barcode Produk Penjualan"
+    (scanned)="handleBarcodeScanned($event)"
+    (closed)="closeScanner()"
+  ></app-barcode-scanner>
 </div>

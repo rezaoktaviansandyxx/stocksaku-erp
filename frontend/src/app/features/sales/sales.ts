@@ -5,7 +5,7 @@ import { SalesService } from '@core/services';
 import { CustomerService } from '@core/services';
 import { InventoryService } from '@core/services';
 import { AuthService } from '@core/services';
-import { ConfirmDialog } from '@shared/components';
+import { BarcodeScannerComponent, ConfirmDialog, AppIconComponent } from '@shared/components';
 import { NumberFormatDirective } from '@shared/directives';
 import type {
   SalesOrderCreate,
@@ -26,7 +26,14 @@ interface ItemRow {
 @Component({
   selector: 'app-sales',
   standalone: true,
-  imports: [CommonModule, FormsModule, ConfirmDialog, NumberFormatDirective],
+  imports: [
+    CommonModule,
+    FormsModule,
+    ConfirmDialog,
+    NumberFormatDirective,
+    BarcodeScannerComponent,
+    AppIconComponent,
+  ],
   templateUrl: './sales.html',
   styleUrl: './sales.scss',
 })
@@ -46,6 +53,7 @@ export class Sales implements OnInit {
 
   // Modals
   showCreateModal = signal(false);
+  showScanner = signal(false);
   selectedSo = signal<SalesOrderResponse | null>(null);
   soToConfirm = signal<SalesOrderResponse | null>(null);
   soToCancel = signal<SalesOrderResponse | null>(null);
@@ -120,37 +128,92 @@ export class Sales implements OnInit {
         this.warehouses.set(res);
         if (res.length > 0 && !this.newSo.warehouse_id) {
           this.newSo.warehouse_id = res[0].id;
+          this.refreshAllAvailability();
         }
       },
     });
 
     this.inventoryService.listProducts({}, headers).subscribe({
-      next: (res) => this.products.set(res),
+      next: (res) => {
+        this.products.set(res);
+        this.refreshAllAvailability();
+      },
     });
   }
 
   openCreateModal(): void {
+    const defaultWarehouseId = this.warehouses().length > 0 ? this.warehouses()[0].id : null;
     this.newSo = {
       customer_id: null,
-      warehouse_id: this.warehouses().length > 0 ? this.warehouses()[0].id : null,
+      warehouse_id: defaultWarehouseId,
       notes: '',
     };
-    const firstProd = this.products().length > 0 ? this.products()[0] : null;
-    this.soItemRows = [
-      {
-        product_id: firstProd ? firstProd.id : null,
-        product_name: firstProd ? `${firstProd.name} (${firstProd.sku})` : '',
-        quantity: 1,
-        unit_price: firstProd ? Number(firstProd.selling_price) : 0,
-        available: null,
-      },
-    ];
-    this.refreshAllAvailability();
+    this.soItemRows = [];
     this.showCreateModal.set(true);
+    // Refresh stock if warehouses and products are already loaded, or re-fetch master data
+    if (this.warehouses().length === 0 || this.products().length === 0) {
+      this.loadMasterData();
+    } else {
+      this.refreshAllAvailability();
+    }
   }
 
   closeCreateModal(): void {
     this.showCreateModal.set(false);
+  }
+
+  // Barcode Scanner Handlers
+  openScanner(): void {
+    this.showScanner.set(true);
+  }
+
+  closeScanner(): void {
+    this.showScanner.set(false);
+  }
+
+  handleBarcodeScanned(barcode: string): void {
+    const code = barcode.trim().toLowerCase();
+    const matched = this.products().find(
+      (p) => p.sku.toLowerCase() === code || (p as unknown as { barcode?: string }).barcode?.toLowerCase() === code
+    );
+
+    if (!matched) {
+      this.errorMessage.set(`Produk dengan barcode/SKU "${barcode}" tidak ditemukan.`);
+      setTimeout(() => this.errorMessage.set(null), 4000);
+      return;
+    }
+
+    // Cek apakah produk sudah ada di baris soItemRows
+    const existingIndex = this.soItemRows.findIndex((r) => r.product_id === matched.id);
+
+    if (existingIndex >= 0) {
+      // Tambah quantity + 1
+      this.soItemRows[existingIndex].quantity += 1;
+      this.refreshAvailability(this.soItemRows[existingIndex]);
+    } else {
+      // Cek jika baris pertama masih kosong belum ada produk
+      if (this.soItemRows.length === 1 && !this.soItemRows[0].product_id) {
+        this.soItemRows[0].product_id = matched.id;
+        this.soItemRows[0].product_name = `${matched.name} (${matched.sku})`;
+        this.soItemRows[0].quantity = 1;
+        this.soItemRows[0].unit_price = Number(matched.selling_price);
+        this.refreshAvailability(this.soItemRows[0]);
+      } else {
+        // Buat baris baru
+        const newRow: ItemRow = {
+          product_id: matched.id,
+          product_name: `${matched.name} (${matched.sku})`,
+          quantity: 1,
+          unit_price: Number(matched.selling_price),
+          available: null,
+        };
+        this.soItemRows.push(newRow);
+        this.refreshAvailability(newRow);
+      }
+    }
+
+    this.successMessage.set(`"${matched.name}" berhasil ditambahkan via barcode!`);
+    setTimeout(() => this.successMessage.set(null), 3000);
   }
 
   addItemRow(): void {
