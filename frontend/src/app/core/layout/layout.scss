@@ -96,12 +96,13 @@
 }
 
 .sidebar-footer-brand {
-  padding: 1.25rem 1.25rem;
+  padding: 1.25rem 1.25rem calc(1.25rem + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--color-sidebar-border);
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
   margin-top: auto;
+  flex-shrink: 0;
 }
 
 .sidebar-footer-brand .app-version {
@@ -316,7 +317,10 @@
     position: fixed;
     top: 0;
     left: 0;
+    bottom: 0;
     height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
     transform: translateX(-100%);
     width: 270px;
     z-index: var(--z-sidebar);
