@@ -2,12 +2,12 @@ import { Component, signal } from '@angular/core';
 import { RouterOutlet, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../services/auth.service';
-import { ConfirmDialog } from '@shared/components';
+import { ConfirmDialog, AppIconComponent } from '@shared/components';
 
 @Component({
   selector: 'app-org-layout',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, ConfirmDialog],
+  imports: [RouterOutlet, CommonModule, ConfirmDialog, AppIconComponent],
   templateUrl: './org-layout.html',
   styleUrl: './org-layout.scss',
 })

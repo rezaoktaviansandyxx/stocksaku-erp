@@ -40,29 +40,24 @@
   align-items: center;
 }
 
-.btn-logout {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: #ffffff;
-  border: 1px solid #fed7aa;
+.logout-btn-header {
+  background: #fff;
+  color: var(--color-danger, #ef4444);
+  border: 1px solid #fecaca;
+  padding: 0.45rem 0.95rem;
   border-radius: 8px;
-  color: #ea580c;
-  font-size: 0.875rem;
-  font-weight: 600;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 600;
   transition: all 0.2s ease;
 
-  .logout-icon {
-    font-size: 1rem;
-  }
-
   &:hover {
-    background: #fff7ed;
-    border-color: #f97316;
-    color: #c2410c;
-    box-shadow: 0 2px 6px rgba(234, 88, 12, 0.15);
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: var(--color-danger-hover, #dc2626);
   }
 }
 
@@ -79,11 +74,11 @@
     padding: 0.75rem 1rem;
   }
 
-  .logout-text {
+  .logout-btn-header .btn-text {
     display: none;
   }
 
-  .btn-logout {
+  .logout-btn-header {
     padding: 0.5rem;
   }
 }
