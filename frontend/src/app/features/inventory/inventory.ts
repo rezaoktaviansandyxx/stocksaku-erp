@@ -188,6 +188,27 @@ export class Inventory implements OnInit {
     this.fetchMovements();
   }
 
+  downloadBalancesXlsx(): void {
+    const headers = this.auth.buildHeaders();
+    this.inventory.exportBalancesXlsx(headers).subscribe({
+      next: (blob) => this.saveBlob(blob, `laporan-saldo-stok-${this.timestamp()}.xlsx`),
+      error: () => this.error.set('Gagal mengunduh laporan saldo stok XLSX'),
+    });
+  }
+
+  downloadMovementsXlsx(): void {
+    const headers = this.auth.buildHeaders();
+    const params: Record<string, unknown> = {};
+    if (this.movementProductId) params['product_id'] = this.movementProductId;
+    if (this.movementStartDate) params['start_date'] = this.movementStartDate;
+    if (this.movementEndDate) params['end_date'] = this.movementEndDate;
+
+    this.inventory.exportMovementsXlsx(params as never, headers).subscribe({
+      next: (blob) => this.saveBlob(blob, `riwayat-mutasi-stok-${this.timestamp()}.xlsx`),
+      error: () => this.error.set('Gagal mengunduh riwayat mutasi XLSX'),
+    });
+  }
+
   downloadBalancesCsv(): void {
     const headers = this.auth.buildHeaders();
     this.inventory.exportBalancesCsv(headers).subscribe({

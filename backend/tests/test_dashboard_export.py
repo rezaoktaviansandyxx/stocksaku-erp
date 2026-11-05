@@ -117,6 +117,64 @@ def test_dashboard_summary_requires_org_header(client):
     assert res.status_code in (401, 422)
 
 
+def test_balances_export_xlsx_contains_valuation(client):
+    import io
+    import openpyxl
+    headers, wh_id, prod_id = _setup(client)
+
+    res = client.get("/inventory/export-xlsx", headers=headers)
+    assert res.status_code == 200
+    assert "spreadsheetml" in res.headers["content-type"]
+    assert "attachment" in res.headers["content-disposition"]
+    assert "laporan-saldo-stok.xlsx" in res.headers["content-disposition"]
+
+    wb = openpyxl.load_workbook(io.BytesIO(res.content))
+    ws = wb.active
+    assert ws.title == "Laporan Saldo & Valuasi Stok"
+    # Row 1 is Title, Row 2 is generated at, Row 3 empty, Row 4 headers, Row 5 data
+    header_values = [ws.cell(row=4, column=col).value for col in range(1, 8)]
+    assert header_values == ["No", "SKU", "Nama Produk", "Gudang", "Saldo Stok", "Harga Pokok", "Nilai Persediaan"]
+
+    data_values = [ws.cell(row=5, column=col).value for col in range(1, 8)]
+    assert data_values[0] == 1
+    assert data_values[1] == "PROD-DASH-1"
+    assert data_values[2] == "Gula Pasir"
+    assert data_values[3] == "Gudang Utama"
+    assert data_values[4] == 10.0
+    assert data_values[5] == 12000.0
+    assert data_values[6] == 120000.0
+
+
+def test_movements_export_xlsx_respects_product_filter(client):
+    import io
+    import openpyxl
+    headers, wh_id, prod_id = _setup(client)
+
+    other = client.post("/products", json={
+        "sku": "PROD-DASH-2",
+        "name": "Garam",
+        "unit_id": client.get("/units", headers=headers).json()[0]["id"],
+        "cost_price": 1000,
+        "selling_price": 2000,
+    }, headers=headers).json()["id"]
+    client.post("/inventory/initial", json={"warehouse_id": wh_id, "product_id": other, "quantity": "3"}, headers=headers)
+
+    res = client.get(f"/inventory/movements/export-xlsx?product_id={prod_id}", headers=headers)
+    assert res.status_code == 200
+    assert "spreadsheetml" in res.headers["content-type"]
+
+    wb = openpyxl.load_workbook(io.BytesIO(res.content))
+    ws = wb.active
+    header_values = [ws.cell(row=4, column=col).value for col in range(1, 10)]
+    assert header_values == ["No", "Waktu", "SKU", "Nama Produk", "Gudang", "Tipe Mutasi", "Kuantitas", "Referensi", "Catatan"]
+
+    row5_sku = ws.cell(row=5, column=3).value
+    assert row5_sku == "PROD-DASH-1"
+    # Make sure PROD-DASH-2 is not present in rows
+    skus = [ws.cell(row=r, column=3).value for r in range(5, ws.max_row) if ws.cell(row=r, column=3).value]
+    assert "PROD-DASH-2" not in skus
+
+
 def test_balances_export_csv_contains_valuation(client):
     headers, wh_id, prod_id = _setup(client)
 
