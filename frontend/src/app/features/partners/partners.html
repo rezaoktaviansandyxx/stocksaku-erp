@@ -36,7 +36,7 @@
         [class.active]="activeTab() === 'suppliers'"
         (click)="activeTab.set('suppliers')"
       >
-        <span class="tab-label">Supplier (Pemasok)</span>
+        <span class="tab-label">Supplier <span class="tab-label-sub">(Pemasok)</span></span>
         <span class="tab-badge">{{ suppliers().length }}</span>
       </button>
       <button
@@ -45,7 +45,7 @@
         [class.active]="activeTab() === 'customers'"
         (click)="activeTab.set('customers')"
       >
-        <span class="tab-label">Pelanggan (Customer)</span>
+        <span class="tab-label">Pelanggan <span class="tab-label-sub">(Customer)</span></span>
         <span class="tab-badge">{{ customers().length }}</span>
       </button>
     </div>
@@ -97,11 +97,11 @@
                   <td>{{ sup.email || '-' }}</td>
                   <td>{{ sup.created_at | date:'dd MMM yyyy' }}</td>
                   <td class="cell-actions">
-                    <button class="btn-icon-action edit" (click)="openEditSupplier(sup)" title="Edit">
-                      ✎
+                    <button class="btn-small" (click)="openEditSupplier(sup)" title="Edit">
+                      Edit
                     </button>
-                    <button class="btn-icon-action delete" (click)="confirmDeleteSupplier(sup)" title="Hapus">
-                      ✕
+                    <button class="btn-small btn-danger" (click)="confirmDeleteSupplier(sup)" title="Hapus">
+                      Hapus
                     </button>
                   </td>
                 </tr>
@@ -149,11 +149,11 @@
                   <td>{{ cust.email || '-' }}</td>
                   <td>{{ cust.created_at | date:'dd MMM yyyy' }}</td>
                   <td class="cell-actions">
-                    <button class="btn-icon-action edit" (click)="openEditCustomer(cust)" title="Edit">
-                      ✎
+                    <button class="btn-small" (click)="openEditCustomer(cust)" title="Edit">
+                      Edit
                     </button>
-                    <button class="btn-icon-action delete" (click)="confirmDeleteCustomer(cust)" title="Hapus">
-                      ✕
+                    <button class="btn-small btn-danger" (click)="confirmDeleteCustomer(cust)" title="Hapus">
+                      Hapus
                     </button>
                   </td>
                 </tr>
