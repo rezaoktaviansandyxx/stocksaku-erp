@@ -57,10 +57,16 @@ export class Layout {
     this.router.events
       .pipe(filter((event) => event instanceof NavigationEnd))
       .subscribe(() => {
-        const newTitle = this.navItems.find(
-          (item) => this.router.isActive(item.path, false),
-        )?.title;
-        this.pageTitle.set(newTitle || 'StokSaku ERP');
+        // Find exact match first, then fall back to longest prefix match
+        const exactMatch = this.navItems.find((item) => this.router.isActive(item.path, true));
+        if (exactMatch) {
+          this.pageTitle.set(exactMatch.title);
+        } else {
+          const match = this.navItems
+            .filter((item) => this.router.isActive(item.path, false))
+            .sort((a, b) => b.path.length - a.path.length)[0];
+          this.pageTitle.set(match?.title || 'StokSaku ERP');
+        }
       });
   }
 
