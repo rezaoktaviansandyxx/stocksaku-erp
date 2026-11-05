@@ -41,7 +41,7 @@
         [class.active]="activeTab() === 'categories'"
         (click)="activeTab.set('categories')"
       >
-        <span class="tab-label">Kategori Produk</span>
+        <span class="tab-label">Kategori <span class="tab-label-sub">Produk</span></span>
         <span class="tab-badge">{{ categories().length }}</span>
       </button>
       <button
@@ -50,7 +50,7 @@
         [class.active]="activeTab() === 'units'"
         (click)="activeTab.set('units')"
       >
-        <span class="tab-label">Satuan Produk</span>
+        <span class="tab-label">Satuan <span class="tab-label-sub">Produk</span></span>
         <span class="tab-badge">{{ units().length }}</span>
       </button>
     </div>
