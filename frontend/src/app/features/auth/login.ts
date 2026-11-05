@@ -36,11 +36,7 @@ export class Login {
     this.auth.login(this.loginForm.value as { email: string; password: string }).subscribe({
       next: () => {
         this.loading.set(false);
-        if (this.auth.isOrgSelected()) {
-          this.router.navigate(['/dashboard']);
-        } else {
-          this.router.navigate(['/orgs']);
-        }
+        this.router.navigate(['/orgs']);
       },
       error: (err) => {
         this.loading.set(false);
