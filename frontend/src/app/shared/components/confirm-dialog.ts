@@ -81,7 +81,7 @@ import { CommonModule } from '@angular/common';
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 1050;
+      z-index: var(--z-modal-confirm, 2500);
       padding: 1rem;
       animation: fadeIn 0.15s ease-out;
     }
